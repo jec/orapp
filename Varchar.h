@@ -38,17 +38,17 @@ namespace Oracle
 			virtual ~Varchar()				throw();
 
 			// accessors
-			virtual std::string str() const			throw(Value_Error);	// return a string
-			virtual std::string str(const std::string&) const throw();		// return a string or given string if null
-			virtual std::string str(						// return a string of given format
+			virtual std::string str() const			throw(Error);	// return a string
+			virtual std::string str(const std::string&) const throw();	// return a string or given string if null
+			virtual std::string str(					// return a string of given format
 				const std::string&,						
 				const std::string&) const		throw();
-			virtual std::string sql_str() const		throw();		// return a string
-			virtual long lng() const			throw(Value_Error);	// return a long
-			virtual long lng(const long) const		throw(Value_Error);	// return a long or given long if null
-			virtual double dbl() const			throw(Value_Error);	// return a double
-			virtual double dbl(const double) const		throw(Value_Error);	// return a double or given double if null
-			virtual int type() const			throw();		// Oracle null-terminated STRING
+			virtual std::string sql_str() const		throw();	// return a string
+			virtual long lng() const			throw(Error);	// return a long
+			virtual long lng(const long) const		throw(Error);	// return a long or given long if null
+			virtual double dbl() const			throw(Error);	// return a double
+			virtual double dbl(const double) const		throw(Error);	// return a double or given double if null
+			virtual int type() const			throw();	// Oracle null-terminated STRING
 			virtual int maxsize() const			throw()
 				{ return max_sz; };
 
@@ -61,15 +61,16 @@ namespace Oracle
 
 		protected:
 			// data members
-			char* vc;								// value
-			int max_sz;								// max size
+			char* vc;							// value
+			int max_sz;							// max size
 
 			// implementors
 			virtual void* data() const 			throw()
 				{ return (void*)vc; };
 	};
 
-	std::ostream& operator<<(std::ostream&, const Varchar&);
+	inline std::ostream& operator<<(std::ostream& o, const Varchar& v)
+	{ return o << v.str("<NULL>"); }
 	const bool operator==(const Varchar&, const Varchar&);
 }
 

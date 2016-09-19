@@ -87,6 +87,13 @@ Oracle::OCI_Error::OCI_Error(const std::string& m, OCIError* error_h, const std:
 }
 
 
+Oracle::OCI_Error::OCI_Error(const OCI_Error& e)
+	: Error(e.module, e.msg, e.fname, e.line), ora_code(e.ora_code)
+{
+	desc << e.desc.str();
+}
+
+
 std::string
 Oracle::Error::str() const
 {

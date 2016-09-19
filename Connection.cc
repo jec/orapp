@@ -27,6 +27,9 @@
 #include <oci.h>
 
 
+Oracle::Env Oracle::Connection::env_;
+
+
 Oracle::Connection::Connection(const std::string& u, const std::string& p, const std::string& d) throw()
 	: uid(u), pw(p), sid(d), stat(not_connected), ses_h(0), svc_h(0), svr_h(0)
 {
@@ -65,7 +68,7 @@ Oracle::Connection::Connection(const std::string& s) throw()
 }
 
 
-Oracle::Connection::~Connection() throw(Oracle::OCI_Error)
+Oracle::Connection::~Connection() throw(Oracle::Error)
 {
 	if (stat == connected)
 	{
@@ -79,7 +82,7 @@ Oracle::Connection::~Connection() throw(Oracle::OCI_Error)
 
 
 void
-Oracle::Connection::open() throw(Oracle::OCI_Error)
+Oracle::Connection::open() throw(Oracle::Error)
 {
 	if (stat == connected)
 		return;
@@ -110,7 +113,7 @@ Oracle::Connection::open() throw(Oracle::OCI_Error)
 
 
 Oracle::Stmt*
-Oracle::Connection::prepare(const std::string& sql) throw(Oracle::Error, Oracle::OCI_Error)
+Oracle::Connection::prepare(const std::string& sql) throw(Oracle::Error)
 {
 	// connect to database if necessary
 	if (stat == not_connected)
@@ -163,7 +166,7 @@ Oracle::Connection::prepare(const std::string& sql) throw(Oracle::Error, Oracle:
 
 
 void
-Oracle::Connection::rollback() throw(Oracle::OCI_Error)
+Oracle::Connection::rollback() throw(Oracle::Error)
 {
 	if (stat == not_connected)
 		throw State_Error("Connection::rollback", "Not connected");
@@ -177,7 +180,7 @@ Oracle::Connection::rollback() throw(Oracle::OCI_Error)
 
 
 void
-Oracle::Connection::commit() throw(Oracle::OCI_Error)
+Oracle::Connection::commit() throw(Oracle::Error)
 {
 	if (stat == not_connected)
 		throw State_Error("Connection::commit", "Not connected");
@@ -191,7 +194,7 @@ Oracle::Connection::commit() throw(Oracle::OCI_Error)
 
 
 void
-Oracle::Connection::close() throw(Oracle::OCI_Error)
+Oracle::Connection::close() throw(Oracle::Error)
 {
 	if (stat == not_connected)
 		return;
@@ -204,7 +207,7 @@ Oracle::Connection::close() throw(Oracle::OCI_Error)
 
 
 void
-Oracle::Connection::init_handles() throw(Oracle::OCI_Error)
+Oracle::Connection::init_handles() throw(Oracle::Error)
 {
 	// allocate a service handle
 	if (OCIHandleAlloc(
@@ -213,7 +216,7 @@ Oracle::Connection::init_handles() throw(Oracle::OCI_Error)
 			(ub4) OCI_HTYPE_SVCCTX,					// handle type
 			(size_t) 0,						// user memory size
 			(dvoid **) 0))						// user memory ptr
-		throw OCI_Error("Connection::init_handles", err_h, __FILE__, __LINE__);
+		throw Error("Connection::init_handles", "Could not allocate a service handle");
 
 	// allocate a server handle
 	if (OCIHandleAlloc(
@@ -222,7 +225,7 @@ Oracle::Connection::init_handles() throw(Oracle::OCI_Error)
 			(ub4) OCI_HTYPE_SERVER,
 			(size_t) 0,
 			(dvoid **) 0))
-		throw OCI_Error("Connection::init_handles", err_h, __FILE__, __LINE__);
+		throw Error("Connection::init_handles", "Could not allocate a server handle");
 
 	// allocate a session handle
 	if (OCIHandleAlloc(
@@ -231,12 +234,12 @@ Oracle::Connection::init_handles() throw(Oracle::OCI_Error)
 			(ub4) OCI_HTYPE_SESSION,
 			(size_t) 0,
 			(dvoid **) 0))
-		throw OCI_Error("Connection::init_handles", err_h, __FILE__, __LINE__);
+		throw Error("Connection::init_handles", "Could not allocate a session handle");
 }
 
 
 void
-Oracle::Connection::attach_server() throw(Oracle::OCI_Error)
+Oracle::Connection::attach_server() throw(Oracle::Error)
 {
 	// attach to server
 	if (OCIServerAttach(
@@ -259,7 +262,7 @@ Oracle::Connection::attach_server() throw(Oracle::OCI_Error)
 
 
 void
-Oracle::Connection::log_on() throw(Oracle::OCI_Error)
+Oracle::Connection::log_on() throw(Oracle::Error)
 {
 	// set attributes in the authentication handle
 	if (OCIAttrSet(	(dvoid *) ses_h,
@@ -299,7 +302,7 @@ Oracle::Connection::log_on() throw(Oracle::OCI_Error)
 
 
 void
-Oracle::Connection::log_off() throw(Oracle::OCI_Error)
+Oracle::Connection::log_off() throw(Oracle::Error)
 {
 	if (OCISessionEnd(
 			svc_h,							// service handle
@@ -311,7 +314,7 @@ Oracle::Connection::log_off() throw(Oracle::OCI_Error)
 
 
 void
-Oracle::Connection::detach_server() throw(Oracle::OCI_Error)
+Oracle::Connection::detach_server() throw(Oracle::Error)
 {
 	if (OCIServerDetach(
 			svr_h,							// server handle

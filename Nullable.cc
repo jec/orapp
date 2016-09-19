@@ -31,7 +31,7 @@ Oracle::Nullable::Nullable() throw()
 
 
 std::string
-Oracle::Nullable::str() const throw(Oracle::Value_Error)
+Oracle::Nullable::str() const throw(Oracle::Error)
 {
 	throw Value_Error("Nullable::str()", "Cannot make a string out of a NULL");
 }
@@ -60,7 +60,7 @@ Oracle::Nullable::sql_str() const throw()
 
 
 long
-Oracle::Nullable::lng() const throw(Oracle::Value_Error)
+Oracle::Nullable::lng() const throw(Oracle::Error)
 {
 	throw Value_Error("Nullable::lng()", "Cannot make a long out of a NULL");
 }
@@ -74,7 +74,7 @@ Oracle::Nullable::lng(const long n) const throw()
 
 
 double
-Oracle::Nullable::dbl() const throw(Oracle::Value_Error)
+Oracle::Nullable::dbl() const throw(Oracle::Error)
 {
 	throw Value_Error("Nullable::dbl()", "Cannot make a double out of a NULL");
 }
@@ -88,15 +88,7 @@ Oracle::Nullable::dbl(const double d) const throw()
 
 
 int
-Oracle::Nullable::type() const throw(Oracle::Value_Error)
+Oracle::Nullable::type() const throw(Oracle::Error)
 {
 	throw Value_Error("Nullable::type", "A NULL has no type");
-}
-
-
-std::ostream&
-Oracle::operator<<(std::ostream& o, const Nullable& n)
-{
-	o << n.str("<NULL>");
-	return o;
 }

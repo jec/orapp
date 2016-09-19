@@ -81,7 +81,9 @@ namespace Oracle
 			virtual void* data() const { return (void*)num; }			// ptr to data
 	};
 
-	std::ostream& operator<<(std::ostream&, const Number&);
+	inline std::ostream& operator<<(std::ostream& o, const Number& n)
+	{ return o << n.str("<NULL>"); }
+
 	const bool operator==(const Number&, const Number&);
 }
 

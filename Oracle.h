@@ -33,8 +33,8 @@ class OCIError;
 namespace Oracle
 {
 	// version
-	const char version[] = "1.0.0";
-	const char copyright[] = "Copyright (C) 2000 James Edwin Cain <me@jimcain.net>";
+	const char version[] = "1.1.0";
+	const char copyright[] = "Copyright (C) 2000-2001 James Edwin Cain <me@jimcain.net>";
 
 	// helper functions
 	std::string sqlquote(const std::string&);		// make string SQL safe
@@ -98,6 +98,7 @@ namespace Oracle
 			OCIError*,				// OCI error handle
 			const std::string& = "",		// file name
 			const int = 0);				// line number
+		OCI_Error(const OCI_Error&);
 		int ora_code;
 	};
 

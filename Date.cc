@@ -39,7 +39,7 @@ Oracle::Date::Date() throw()
 }
 
 
-Oracle::Date::Date(OCIDate& d) throw(Oracle::OCI_Error)
+Oracle::Date::Date(OCIDate& d) throw(Oracle::Error)
 	: Nullable(), date_(new OCIDate)
 {
 	if (OCIDateAssign(
@@ -51,23 +51,20 @@ Oracle::Date::Date(OCIDate& d) throw(Oracle::OCI_Error)
 }
 
 
-Oracle::Date::Date(const Date& d) throw(Oracle::OCI_Error)
+Oracle::Date::Date(const Oracle::Date& d) throw(Oracle::Error)
 	: Nullable(), date_(new OCIDate)
 {
 	// if n is not null, initialize this Date with d's value
-	if (d.ind == 0)
-	{
+	if ((ind = d.ind) == 0)
 		if (OCIDateAssign(
 				env.err(),				// error handle
 				d.date_,				// from OCIDate
 				date_))					// to OCIDate
 			throw OCI_Error("Date::Date(const Date&)", env.err());
-		ind = 0;
-	}
 }
 
 
-Oracle::Date::Date(const std::string& s) throw(Oracle::OCI_Error)
+Oracle::Date::Date(const std::string& s) throw(Oracle::Error)
 	: Nullable(), date_(new OCIDate)
 {
 	if (OCIDateFromText(
@@ -79,12 +76,16 @@ Oracle::Date::Date(const std::string& s) throw(Oracle::OCI_Error)
 			(CONST text*) 0,				// default language
 			(ub4) 0,					// language name length
 			date_))						// output buffer
-		throw OCI_Error("Date::Date(const std::string&)", env.err());
+	{
+		OCI_Error e("Date::Date(const std::string&)", env.err());
+		e.desc << "date string = {" << s << "}; default format = {" << default_fmt << "}";
+		throw e;
+	}
 	ind = 0;
 }
 
 
-Oracle::Date::Date(const std::string& s, const std::string& f) throw(Oracle::OCI_Error)
+Oracle::Date::Date(const std::string& s, const std::string& f) throw(Oracle::Error)
 	: Nullable(), date_(new OCIDate)
 {
 	if (OCIDateFromText(
@@ -96,7 +97,11 @@ Oracle::Date::Date(const std::string& s, const std::string& f) throw(Oracle::OCI
 			(CONST text*) 0,				// default language
 			(ub4) 0,					// language name length
 			date_))						// output buffer
-		throw OCI_Error("Date::Date(const std::string&, const std::string&)", env.err());
+	{
+		OCI_Error e("Date::Date(const std::string&, const std::string&)", env.err());
+		e.desc << "date string = {" << s << "}; format = {" << f << "}";
+		throw e;
+	}
 	ind = 0;
 }
 
@@ -122,8 +127,30 @@ Oracle::Date::maxsize() const throw()
 }
 
 
+Oracle::Date&
+Oracle::Date::assign(const std::string& s, const std::string& f) throw(Oracle::Error)
+{
+	if (OCIDateFromText(
+			env.err(),					// error handle
+			(CONST text*) s.c_str(),			// input string
+			(ub4) s.length(),				// input string length
+			(CONST text*) f.c_str(),			// format string
+			(ub1) f.length(),				// format string length
+			(CONST text*) 0,				// default language
+			(ub4) 0,					// language name length
+			date_))						// output buffer
+	{
+		OCI_Error e("Date::Date(const std::string&, const std::string&)", env.err());
+		e.desc << "date string = {" << s << "}; format = {" << f << "}";
+		throw e;
+	}
+	ind = 0;
+	return *this;
+}
+
+
 std::string
-Oracle::Date::str() const throw(Oracle::OCI_Error)
+Oracle::Date::str() const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return Nullable::str();
@@ -144,7 +171,7 @@ Oracle::Date::str() const throw(Oracle::OCI_Error)
 
 
 std::string
-Oracle::Date::str(const std::string& s) const throw(Oracle::OCI_Error)
+Oracle::Date::str(const std::string& s) const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return s;
@@ -165,7 +192,7 @@ Oracle::Date::str(const std::string& s) const throw(Oracle::OCI_Error)
 
 
 std::string
-Oracle::Date::str(const std::string& s, const std::string& f) const throw(Oracle::OCI_Error)
+Oracle::Date::str(const std::string& s, const std::string& f) const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return s;
@@ -186,7 +213,7 @@ Oracle::Date::str(const std::string& s, const std::string& f) const throw(Oracle
 
 
 std::string
-Oracle::Date::sql_str() const throw(Oracle::Value_Error)
+Oracle::Date::sql_str() const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return Nullable::sql_str();
@@ -195,7 +222,7 @@ Oracle::Date::sql_str() const throw(Oracle::Value_Error)
 
 
 long
-Oracle::Date::lng() const throw(Oracle::OCI_Error, Oracle::Value_Error)
+Oracle::Date::lng() const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return Nullable::lng();
@@ -221,7 +248,7 @@ Oracle::Date::lng() const throw(Oracle::OCI_Error, Oracle::Value_Error)
 
 
 long
-Oracle::Date::lng(const long n) const throw(Oracle::OCI_Error)
+Oracle::Date::lng(const long n) const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return n;
@@ -247,7 +274,7 @@ Oracle::Date::lng(const long n) const throw(Oracle::OCI_Error)
 
 
 double
-Oracle::Date::dbl() const throw(Oracle::Value_Error, Oracle::OCI_Error)
+Oracle::Date::dbl() const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return Nullable::lng();
@@ -273,7 +300,7 @@ Oracle::Date::dbl() const throw(Oracle::Value_Error, Oracle::OCI_Error)
 
 
 double
-Oracle::Date::dbl(const double n) const throw(Oracle::OCI_Error)
+Oracle::Date::dbl(const double n) const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return n;
@@ -299,7 +326,7 @@ Oracle::Date::dbl(const double n) const throw(Oracle::OCI_Error)
 
 
 Oracle::Date
-Oracle::Date::last_day() const throw(Oracle::OCI_Error)
+Oracle::Date::last_day() const throw(Oracle::Error)
 {
 	OCIDate last;
 	if (OCIDateLastDay(
@@ -312,7 +339,7 @@ Oracle::Date::last_day() const throw(Oracle::OCI_Error)
 
 
 Oracle::Date
-Oracle::Date::next_day(const std::string& day) const throw(Oracle::OCI_Error)
+Oracle::Date::next_day(const std::string& day) const throw(Oracle::Error)
 {
 	OCIDate next;
 	if (OCIDateNextDay(
@@ -321,29 +348,34 @@ Oracle::Date::next_day(const std::string& day) const throw(Oracle::OCI_Error)
 			(text*) day.c_str(),				// day of week
 			(ub4) day.length(),				// day of week length
 			&next))						// output OCIDate
-		throw OCI_Error("Date::next_day(const std::string&)", env.err());
+	{
+		OCI_Error e("Date::next_day(const std::string&)", env.err());
+		e.desc << "date = {" << str() << "}; day = {" << day << "}";
+		throw e;
+	}
 	return Date(next);
 }
 
 
 Oracle::Date&
-Oracle::Date::operator=(const Date& rhs) throw(Oracle::OCI_Error)
+Oracle::Date::operator=(const Oracle::Date& rhs) throw(Oracle::Error)
 {
-	ind = rhs.ind;
-	if (ind == 0)
+	if (&rhs != this)
 	{
-		if (OCIDateAssign(
-				env.err(),				// error handle
-				rhs.date_,				// from OCIDate
-				date_))					// to OCIDate
-			throw OCI_Error("Date::operator=(const Date&)", env.err());
+		ind = rhs.ind;
+		if (ind == 0)
+			if (OCIDateAssign(
+					env.err(),			// error handle
+					rhs.date_,			// from OCIDate
+					date_))				// to OCIDate
+				throw OCI_Error("Date::operator=(const Date&)", env.err());
 	}
 	return *this;
 }
 
 
 Oracle::Date&
-Oracle::Date::operator=(const char* rhs) throw(Oracle::OCI_Error)
+Oracle::Date::operator=(const char* rhs) throw(Oracle::Error)
 {
 	if (OCIDateFromText(
 			env.err(),					// error handle
@@ -354,14 +386,18 @@ Oracle::Date::operator=(const char* rhs) throw(Oracle::OCI_Error)
 			(CONST text*) 0,				// default language
 			(ub4) 0,					// language name length
 			date_))						// output buffer
-		throw OCI_Error("Date::operator=(const char*)", env.err());
+	{
+		OCI_Error e("Date::operator=(const char*)", env.err());
+		e.desc << "date string = {" << rhs << "}; default format = {" << default_fmt << "}";
+		throw e;
+	}
 	ind = 0;
 	return *this;
 }
 
 
 Oracle::Date&
-Oracle::Date::operator=(const std::string& rhs) throw(Oracle::OCI_Error)
+Oracle::Date::operator=(const std::string& rhs) throw(Oracle::Error)
 {
 	if (OCIDateFromText(
 			env.err(),					// error handle
@@ -372,14 +408,18 @@ Oracle::Date::operator=(const std::string& rhs) throw(Oracle::OCI_Error)
 			(CONST text*) 0,				// default language
 			(ub4) 0,					// language name length
 			date_))						// output buffer
-		throw OCI_Error("Date::operator=(const std::string&)", env.err());
+	{
+		OCI_Error e("Date::operator=(const std::string&)", env.err());
+		e.desc << "date string = {" << rhs << "}; default format = {" << default_fmt << "}";
+		throw e;
+	}
 	ind = 0;
 	return *this;
 }
 
 
 Oracle::Date&
-Oracle::Date::operator+=(const Days& days) throw(Oracle::OCI_Error)
+Oracle::Date::operator+=(const Oracle::Days& days) throw(Oracle::Error)
 {
 	if (OCIDateAddDays(
 			env.err(),					// error handle
@@ -392,7 +432,7 @@ Oracle::Date::operator+=(const Days& days) throw(Oracle::OCI_Error)
 
 
 Oracle::Date&
-Oracle::Date::operator+=(const Months& months) throw(Oracle::OCI_Error)
+Oracle::Date::operator+=(const Oracle::Months& months) throw(Oracle::Error)
 {
 	if (OCIDateAddMonths(
 			env.err(),					// error handle
@@ -405,7 +445,7 @@ Oracle::Date::operator+=(const Months& months) throw(Oracle::OCI_Error)
 
 
 Oracle::Date&
-Oracle::Date::operator-=(const Days& days) throw(Oracle::OCI_Error)
+Oracle::Date::operator-=(const Oracle::Days& days) throw(Oracle::Error)
 {
 	if (OCIDateAddDays(
 			env.err(),					// error handle
@@ -418,7 +458,7 @@ Oracle::Date::operator-=(const Days& days) throw(Oracle::OCI_Error)
 
 
 Oracle::Date&
-Oracle::Date::operator-=(const Months& months) throw(Oracle::OCI_Error)
+Oracle::Date::operator-=(const Oracle::Months& months) throw(Oracle::Error)
 {
 	if (OCIDateAddMonths(
 			env.err(),					// error handle
@@ -431,7 +471,7 @@ Oracle::Date::operator-=(const Months& months) throw(Oracle::OCI_Error)
 
 
 int
-Oracle::Date::operator-(const Date& d) throw(Oracle::OCI_Error)
+Oracle::Date::operator-(const Oracle::Date& d) throw(Oracle::Error)
 {
 	sb4 diff;
 	if (OCIDateDaysBetween(
@@ -445,7 +485,7 @@ Oracle::Date::operator-(const Date& d) throw(Oracle::OCI_Error)
 
 
 bool
-Oracle::Date::operator==(const Date& d) throw(Oracle::OCI_Error)
+Oracle::Date::operator==(const Oracle::Date& d) throw(Oracle::Error)
 {
 	if (ind == -1 || d.ind == -1)
 		return false;
@@ -466,7 +506,7 @@ Oracle::Date::operator==(const Date& d) throw(Oracle::OCI_Error)
 
 
 bool
-Oracle::Date::operator!=(const Date& d) throw(Oracle::OCI_Error)
+Oracle::Date::operator!=(const Oracle::Date& d) throw(Oracle::Error)
 {
 	if (ind == -1 || d.ind == -1)
 		return false;
@@ -487,7 +527,7 @@ Oracle::Date::operator!=(const Date& d) throw(Oracle::OCI_Error)
 
 
 bool
-Oracle::Date::operator<(const Date& d) throw(Oracle::OCI_Error)
+Oracle::Date::operator<(const Oracle::Date& d) throw(Oracle::Error)
 {
 	if (ind == -1 || d.ind == -1)
 		return false;
@@ -508,7 +548,7 @@ Oracle::Date::operator<(const Date& d) throw(Oracle::OCI_Error)
 
 
 bool
-Oracle::Date::operator<=(const Date& d) throw(Oracle::OCI_Error)
+Oracle::Date::operator<=(const Oracle::Date& d) throw(Oracle::Error)
 {
 	if (ind == -1 || d.ind == -1)
 		return false;
@@ -529,7 +569,7 @@ Oracle::Date::operator<=(const Date& d) throw(Oracle::OCI_Error)
 
 
 bool
-Oracle::Date::operator>(const Date& d) throw(Oracle::OCI_Error)
+Oracle::Date::operator>(const Oracle::Date& d) throw(Oracle::Error)
 {
 	if (ind == -1 || d.ind == -1)
 		return false;
@@ -550,7 +590,7 @@ Oracle::Date::operator>(const Date& d) throw(Oracle::OCI_Error)
 
 
 bool
-Oracle::Date::operator>=(const Date& d) throw(Oracle::OCI_Error)
+Oracle::Date::operator>=(const Oracle::Date& d) throw(Oracle::Error)
 {
 	if (ind == -1 || d.ind == -1)
 		return false;
@@ -571,7 +611,7 @@ Oracle::Date::operator>=(const Date& d) throw(Oracle::OCI_Error)
 
 
 Oracle::Date
-Oracle::Date::sysdate() throw(Oracle::OCI_Error)
+Oracle::Date::sysdate() throw(Oracle::Error)
 {
 	OCIDate now;
 	if (OCIDateSysDate(
@@ -611,15 +651,4 @@ operator-(const Oracle::Date& date, const Oracle::Months& months)
 {
 	Oracle::Date d(date);
 	return d -= months;
-}
-
-
-std::ostream&
-Oracle::operator<<(std::ostream& o, const Date& n)
-{
-	if (n.is_null())
-		o << "<NULL>";
-	else
-		o << n.str();
-	return o;
 }

@@ -22,7 +22,6 @@
 #include "Select_Stmt.h"
 #include "Connection.h"
 #include "Varchar.h"
-#include "Rowtype.h"
 #include <cstdio>
 #include <oci.h>
 
@@ -33,13 +32,13 @@ Oracle::Select_Stmt::Select_Stmt(OCIStmt* stmt_hdl, char* stmt_ptr, OCISvcCtx* s
 }
 
 
-Oracle::Select_Stmt::Select_Stmt(Connection& db) throw(Oracle::OCI_Error, Oracle::Error)
+Oracle::Select_Stmt::Select_Stmt(Connection& db) throw(Oracle::Error)
 	: Stmt(db), nc(0), cnamem_(0), cnamev_(0), row_(0)
 {
 }
 
 
-Oracle::Select_Stmt::Select_Stmt(Connection& db, const std::string& sql) throw(Oracle::OCI_Error, Oracle::Error)
+Oracle::Select_Stmt::Select_Stmt(Connection& db, const std::string& sql) throw(Oracle::Error)
 	: Stmt(db, sql), nc(0), cnamem_(0), cnamev_(0), row_(0)
 {
 	// make sure this is actually a SELECT statement
@@ -49,7 +48,7 @@ Oracle::Select_Stmt::Select_Stmt(Connection& db, const std::string& sql) throw(O
 		delete stmt_p;
 		st = Invalid;
 		Type_Error e("Select_Stmt::Select_Stmt(Connection&, const std::string&)", "Statement is not a SELECT statement");
-		e.desc << "statement={" << sql << "}";
+		e.desc << "statement = {" << sql << "}";
 		throw e;
 	}
 }
@@ -63,7 +62,7 @@ Oracle::Select_Stmt::~Select_Stmt() throw()
 
 
 void
-Oracle::Select_Stmt::exec() throw(Oracle::State_Error, Oracle::OCI_Error)
+Oracle::Select_Stmt::exec() throw(Oracle::Error)
 {
 	// Stmt::do_exec will validate state and set state to Executed if successful
 	// state will only be changed if it is not already Executed or higher
@@ -81,7 +80,11 @@ Oracle::Select_Stmt::exec() throw(Oracle::State_Error, Oracle::OCI_Error)
 			(ub4 *) 0,
 			(ub4) OCI_ATTR_PARAM_COUNT,
 			err_h))
-		throw OCI_Error("Select_Stmt::exec()", err_h);
+	{
+		OCI_Error e("Select_Stmt::exec()", err_h);
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
 	nc = col_count;
 
 	// set up vector of column names and map of column name -> number
@@ -102,7 +105,11 @@ Oracle::Select_Stmt::exec() throw(Oracle::State_Error, Oracle::OCI_Error)
 				err_h,
 				(dvoid **) &parm_h,
 				(ub4) i + 1))							// position (one-based)
-			throw OCI_Error("Select_Stmt::exec()", err_h);
+		{
+			OCI_Error e("Select_Stmt::exec()", err_h);
+			e.desc << "statement = {" << stmt_p << "}";
+			throw e;
+		}
 
 		// get column name and add it to col name vector and to col name -> number map
 		if (OCIAttrGet(	(dvoid*) parm_h,
@@ -111,7 +118,11 @@ Oracle::Select_Stmt::exec() throw(Oracle::State_Error, Oracle::OCI_Error)
 				(ub4 *) &col_name_len,
 				(ub4) OCI_ATTR_NAME, 
 				err_h))
-			throw OCI_Error("Select_Stmt::exec()", err_h);
+		{
+			OCI_Error e("Select_Stmt::exec()", err_h);
+			e.desc << "statement = {" << stmt_p << "}";
+			throw e;
+		}
 		(*cnamev_)[i] = std::string((char*)col_name, col_name_len);
 		(*cnamem_)[std::string((char*)col_name, col_name_len)] = i;
 	}
@@ -119,7 +130,7 @@ Oracle::Select_Stmt::exec() throw(Oracle::State_Error, Oracle::OCI_Error)
 
 
 void
-Oracle::Select_Stmt::bind_col(Nullable& bindobj) throw(Oracle::State_Error, Oracle::OCI_Error)
+Oracle::Select_Stmt::bind_col(Oracle::Nullable& bindobj) throw(Oracle::Error)
 {
 	// check state
 	if (st == Initialized)
@@ -129,8 +140,14 @@ Oracle::Select_Stmt::bind_col(Nullable& bindobj) throw(Oracle::State_Error, Orac
 		else
 			throw State_Error("Select_Stmt::bind_col(Nullable&)", "No statement text has been specified");
 	}
+	if (st < Executed) // be consistent with other bind_col()
+		exec();
 	else if (st > Defined)
-		throw State_Error("Select_Stmt::bind_col(Nullable&)", "Too late to bind a column");
+	{
+		State_Error e("Select_Stmt::bind_col(Nullable&)", "Too late to bind a column");
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
 
 	// define by position based on size of bind handle list
 	OCIDefine* def_h;
@@ -146,7 +163,11 @@ Oracle::Select_Stmt::bind_col(Nullable& bindobj) throw(Oracle::State_Error, Orac
 			(ub2*) 0,					// array of length values
 			(ub2*) 0,					// array of return codes
 			(ub4) OCI_DEFAULT))
-		throw OCI_Error("Select_Stmt::bind_col(Nullable&)", err_h);
+	{
+		OCI_Error e("Select_Stmt::bind_col(Nullable&)", err_h);
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
 
 	// save the define handle
 	def_l.push_back(def_h);
@@ -157,7 +178,64 @@ Oracle::Select_Stmt::bind_col(Nullable& bindobj) throw(Oracle::State_Error, Orac
 
 
 void
-Oracle::Select_Stmt::bind_col(Rowtype& row) throw(Oracle::State_Error, Oracle::OCI_Error)
+Oracle::Select_Stmt::bind_col(Oracle::Nullable* n ...) throw(Oracle::Error)
+{
+	// check state
+	if (st == Initialized)
+	{
+		if (std::ostringstream::str().length())
+			prepare(std::ostringstream::str());
+		else
+			throw State_Error("Select_Stmt::bind_col(Nullable* ...)", "No statement text has been specified");
+	}
+	if (st < Executed) // must be executed so we know the # of columns
+		exec();
+	else if (st > Defined)
+	{
+		State_Error e("Select_Stmt::bind_col(Nullable* ...)", "Too late to bind a column");
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
+
+	va_list varg;
+	va_start(varg, n);
+	OCIDefine* def_h;
+	Nullable* bindobj(n);
+	for (int i = 0; i < nc; i++)
+	{
+		if (OCIDefineByPos(
+				stmt_h,					// stmt handle
+				&def_h,					// define handle returned
+				err_h,					// error handle
+				def_l.size() + 1,			// position (one-based)
+				(dvoid*) bindobj->data(),		// output buffer
+				(sb4) bindobj->maxsize(),		// output buffer size
+				(ub2) bindobj->type(),			// external data type
+				(dvoid*) bindobj->ind_addr(),		// indicator
+				(ub2*) 0,				// array of length values
+				(ub2*) 0,				// array of return codes
+				(ub4) OCI_DEFAULT))
+		{
+			OCI_Error e("Select_Stmt::bind_col(Nullable* ...)", err_h);
+			e.desc << "statement = {" << stmt_p << "}; position = " << def_l.size() + 1;
+			throw e;
+		}
+
+		// save the define handle
+		def_l.push_back(def_h);
+		
+		// get next arg
+		bindobj = va_arg(varg, Nullable*);
+	}
+
+	// update the state and clean up
+	st = Defined;
+	va_end(varg);
+}
+
+
+void
+Oracle::Select_Stmt::bind_col(Oracle::Rowtype& row) throw(Oracle::Error)
 {
 	// check state
 	if (st == Initialized)
@@ -167,8 +245,18 @@ Oracle::Select_Stmt::bind_col(Rowtype& row) throw(Oracle::State_Error, Oracle::O
 		else
 			throw State_Error("Select_Stmt::bind_col(Nullable&)", "No statement text has been specified");
 	}
+	if (st < Executed) // must be executed so we know the columns
+		exec();
 	else if (st > Defined)
-		throw State_Error("Select_Stmt::bind_col", "Too late to bind a column");
+	{
+		State_Error e("Select_Stmt::bind_col", "Too late to bind a column");
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
+
+	// initialize Rowtype object if necessary
+	if (row.col_vec == 0)
+		row.init_data(*this);
 
 	// define by position for each column
 	OCIDefine* def_h;
@@ -187,7 +275,11 @@ Oracle::Select_Stmt::bind_col(Rowtype& row) throw(Oracle::State_Error, Oracle::O
 				(ub2*) 0,					// array of length values
 				(ub2*) 0,					// array of return codes
 				(ub4) OCI_DEFAULT))
-			throw OCI_Error("Select_Stmt::bind_col(Rowtype&)", err_h);
+		{
+			OCI_Error e("Select_Stmt::bind_col(Rowtype&)", err_h);
+			e.desc << "statement = {" << stmt_p << "}";
+			throw e;
+		}
 
 		// save the define handle
 		def_l.push_back(def_h);
@@ -199,7 +291,7 @@ Oracle::Select_Stmt::bind_col(Rowtype& row) throw(Oracle::State_Error, Oracle::O
 
 
 bool
-Oracle::Select_Stmt::fetch() throw(Oracle::State_Error, Oracle::OCI_Error)
+Oracle::Select_Stmt::fetch() throw(Oracle::Error)
 {
 	// execute statement if not already done
 	if (st < Executed)
@@ -227,43 +319,38 @@ Oracle::Select_Stmt::fetch() throw(Oracle::State_Error, Oracle::OCI_Error)
 		case OCI_NO_DATA:
 			return false;
 		default:
-			throw OCI_Error("Select_Stmt::fetch()", err_h);
+			OCI_Error e("Select_Stmt::fetch()", err_h);
+			e.desc << "statement = {" << stmt_p << "}";
+			throw e;
 	}
 }
 
 
-Oracle::Nullable&
-Oracle::Select_Stmt::operator[](const int i) const throw(Oracle::State_Error)
+void
+Oracle::Select_Stmt::throw_subscript_error(const std::string& module) const throw(Oracle::Error)
 {
-	if (row_)
-		return (*row_)[i];
-	else
-		throw State_Error("Select_Stmt::operator[](const int)", "Columns not defined internally");
-}
-
-
-Oracle::Nullable&
-Oracle::Select_Stmt::operator[](const std::string& s) const throw(Oracle::State_Error)
-{
-	if (row_)
-		return (*row_)[s];
-	else
-		throw State_Error("Select_Stmt::operator[](const std::string&)", "Columns not defined internally");
+	State_Error e(module, "Columns not defined internally");
+	e.desc << "statement = {" << str() << "}";
+	throw e;
 }
 
 
 std::string
-Oracle::Select_Stmt::colname(const int n) const throw(Oracle::State_Error, Oracle::Value_Error)
+Oracle::Select_Stmt::colname(const int n) const throw(Oracle::Error)
 {
 	if (st < Executed)
-		throw State_Error("Select_Stmt::colname(const int)", "Statement not yet executed");
+	{
+		State_Error e("Select_Stmt::colname(const int)", "Statement not yet executed");
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
 
 	if (n>=0 && n<nc)
 		return (*cnamev_)[n];
 	else
 	{
-		Value_Error e("Select_Stmt::colname(const int)", "Column number out of range");
-		e.desc << "index=" << n;
+		Value_Error e("Select_Stmt::colname(const int)", "Subscript out of range");
+		e.desc << "statement = {" << stmt_p << "}; subscript = " << n;
 		throw e;
 	}
 }

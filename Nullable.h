@@ -48,38 +48,38 @@ namespace Oracle
 			// accessors
 			bool is_null() const				throw()
 				{ return ind == -1; }
-			sb2 indicator() const				throw()			// return indicator variable
+			sb2 indicator() const				throw()		// return indicator variable
 				{ return ind; }
-			virtual std::string str() const			throw(Value_Error);	// return a string
-			virtual std::string str(const std::string&) const throw();		// return a string
-			virtual std::string str(						// return a string of given format
+			virtual std::string str() const			throw(Error);	// return a string
+			virtual std::string str(const std::string&) const throw();	// return a string
+			virtual std::string str(					// return a string of given format
 				const std::string&,						
 				const std::string&) const		throw();
-			virtual std::string sql_str() const 		throw();		// return a proper SQL string
-			virtual long lng() const			throw(Value_Error);	// return a long
-			virtual long lng(const long) const		throw();		// return a long
-			virtual double dbl() const			throw(Value_Error);	// return a double
-			virtual double dbl(const double) const		throw();		// return a double
-			virtual int type() const			throw(Value_Error);	// Oracle type
-			virtual int maxsize() const			throw()			// max size of data
+			virtual std::string sql_str() const 		throw();	// return a proper SQL string
+			virtual long lng() const			throw(Error);	// return a long
+			virtual long lng(const long) const		throw();	// return a long
+			virtual double dbl() const			throw(Error);	// return a double
+			virtual double dbl(const double) const		throw();	// return a double
+			virtual int type() const			throw(Error);	// Oracle type
+			virtual int maxsize() const			throw()		// max size of data
 				{ return 0; }
 			
 		protected:
 			// data members
-			sb2 ind;								// null indicator
+			sb2 ind;							// null indicator
 
 			// implementors
-			// these are used by Stmt to write results from an execute or fetch
-			virtual void* data() const			throw()			// ptr to data
+			virtual void* data() const			throw()		// ptr to data
 				{ return (void*)0; }
-			virtual sb2* ind_addr()				throw()			// ptr to null indicator
+			virtual sb2* ind_addr()				throw()		// ptr to null indicator
 				{ return &ind; }
 
-		friend Stmt;
-		friend Select_Stmt;
+		friend class Stmt;
+		friend class Select_Stmt;
 	};
 
-	std::ostream& operator<<(std::ostream&, const Nullable&);
+	inline std::ostream& operator<<(std::ostream& o, const Nullable& n)
+	{ return o << n.str("<NULL>"); }
 }
 
 #endif

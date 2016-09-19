@@ -35,28 +35,28 @@ namespace Oracle
 	{
 		public:
 			// constructors/destructor
-			Non_Sel_Stmt(Connection&)			throw(OCI_Error, Error); // use this Connection
+			Non_Sel_Stmt(Connection&)			throw(Error);	// use this Connection
 			Non_Sel_Stmt(
-				Connection&,							// use this Connection
-				const std::string&)			throw(OCI_Error, Error); // statement text
+				Connection&,						// use this Connection
+				const std::string&)			throw(Error);	// statement text
 			virtual ~Non_Sel_Stmt() {}
 
 			// implementors
-			virtual void exec()				throw(State_Error, OCI_Error);
+			virtual void exec()				throw(Error);
 
 			// accessors
-			virtual stmt_t type() const						// statement type
+			virtual stmt_t type() const					// statement type
 				{ return Non_Select; }
 		
 		protected:
 			// protected constructor
 			Non_Sel_Stmt(
-				OCIStmt* stmt_hdl,						// statement handle
-				char* stmt_ptr,							// statement text
-				OCISvcCtx* svc_hdl,						// service context handle
-				OCIError* err_hdl)			throw();		// error handle
+				OCIStmt* stmt_hdl,					// statement handle
+				char* stmt_ptr,						// statement text
+				OCISvcCtx* svc_hdl,					// service context handle
+				OCIError* err_hdl)			throw();	// error handle
 		
-		friend Connection;
+		friend class Connection;
 	};
 }
 

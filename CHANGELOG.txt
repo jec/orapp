@@ -1,0 +1,82 @@
+Changes in 1.1.0 (since 1.0.0):
+
+	New Features and Enhancements:
+
+		I made an effort to make throw specs more consistent and
+		changed most of them to the base class Error.
+
+		References to friend classes were changed from the obsolete
+		"friend classname" to "friend class classname".
+
+		Inlined operator<<() in the Nullable class and derived
+		classes.
+
+		Enhanced error reporting by using the Error classes' desc data
+		member more widely.
+
+		In Date.cc: Added an assign() method to the Date class which
+		allows assignment of a string with an arbitrary format.
+
+		In Rowtype.cc: Added a default constructor to the Rowtype
+		class to allow construction of an empty Rowtype object.
+
+		In Rowtype.cc: Added an add(Nullable*, string&) method to allow
+		manual building of Rowtype object contents.
+
+		In Rowtype.cc: Inlined all versions of operator[]().
+
+		In Select_Stmt.cc/h: Added a bind_col(Nullable* ...) method so
+		that multiple columns may be bound to host variables with a
+		single statement.
+
+		In Select_Stmt.cc: bind_col() will now initialize an empty
+		Rowtype object.
+
+		In Stmt.cc/h: A prepare() method with no arguments was added
+		so that the text of a statement built as a stream can be
+		prepared with out being executed.
+
+		In Stmt.cc/h: Added a bind_q(Rowtype&) method so that all
+		objects contained in a Rowtype object may be bound in one
+		step.
+
+		In Stmt.h: The Stmt_Manip class was renamed to Stmt_Null_Manip
+		to logically accommodate a Stmt_Row_Manip class for using
+		Rowtype objects as arguments to manipulators.
+
+	Bugs Fixed:
+
+		In Date.cc: Fixed a bug in Date's copy constructor that caused
+		a Date object to remain uninitialized if if the object being
+		copied is NULL.
+
+		In Date.cc: Fixed the Date-to-Date assignment operator so
+		that it checks for self-assignment.
+
+		In Number.cc: Added a call to OCINumberSetZero() to the
+		default and copy constructors so that later assignments would
+		not result in an error.
+
+		In Number.cc: Fixed the Number-to-Number assignment operator
+		so that it checks for self-assignment; fixed a bug that caused
+		a Number object to remain uninitialized if the rhs object is
+		NULL.
+
+		In Number.cc: Fixed a bug in operator+=(Number), -=, *= and /=
+		which caused a problem for uninitialized lhs objects.
+
+		In Oracle.cc/h: Added a copy constructor for the OCI_Error
+		class.
+
+		In Varchar.cc: In constructor Varchar(int) added
+		initialization of the new character array to an empty string.
+
+		In Varchar.cc: Fixed a bug in Varchar's copy constructor that
+		caused a Varchar object to remain uninitialized if if the
+		object being copied is NULL.
+
+		In Varchar.cc: Fixed the Varchar-to-Varchar assignment
+		operator so that it checks for self-assignment; fixed a bug
+		that left the lhs object's indicator variable unchanged.
+
+

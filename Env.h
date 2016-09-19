@@ -51,9 +51,9 @@ namespace Oracle
 			static OCIEnv* env_h;
 			static OCIError* err_h;
 			
-		friend Connection;
-		friend Date;
-		friend Number;
+		friend class Connection;
+		friend class Date;
+		friend class Number;
 	};
 	
 	

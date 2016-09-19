@@ -37,6 +37,7 @@ Oracle::Varchar::Varchar() throw()
 Oracle::Varchar::Varchar(const int n) throw()
 	: Nullable(), vc(new char[n + 1]), max_sz(n + 1)
 {
+	*vc = 0;
 }
 
 
@@ -54,21 +55,20 @@ Oracle::Varchar::Varchar(const std::string& s) throw()
 {
 	// copy into new array of same size
 	s.copy(vc, s.length());
-	vc[s.length()] = '\0';
+	vc[s.length()] = 0;
 	ind = 0;
 }
 
 
-Oracle::Varchar::Varchar(const Varchar& v) throw()
+Oracle::Varchar::Varchar(const Oracle::Varchar& v) throw()
 	: Nullable()
 {
 	// if v is not null, initialize this Varchar with v's string
-	if (v.ind == 0)
+	if ((ind = v.ind) == 0)
 	{
 		vc = new char[strlen(v.vc) + 1];
 		strcpy(vc, v.vc);
 		max_sz = strlen(v.vc) + 1;
-		ind = 0;
 	}
 }
 
@@ -92,7 +92,7 @@ Oracle::Varchar::type() const throw()
 
 
 std::string
-Oracle::Varchar::str() const throw(Oracle::Value_Error)
+Oracle::Varchar::str() const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return Nullable::str();
@@ -129,7 +129,7 @@ Oracle::Varchar::sql_str() const throw()
 
 
 long
-Oracle::Varchar::lng() const throw(Oracle::Value_Error)
+Oracle::Varchar::lng() const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return Nullable::lng();
@@ -144,7 +144,7 @@ Oracle::Varchar::lng() const throw(Oracle::Value_Error)
 
 
 long
-Oracle::Varchar::lng(const long n) const throw(Oracle::Value_Error)
+Oracle::Varchar::lng(const long n) const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return n;
@@ -159,7 +159,7 @@ Oracle::Varchar::lng(const long n) const throw(Oracle::Value_Error)
 
 
 double
-Oracle::Varchar::dbl() const throw(Oracle::Value_Error)
+Oracle::Varchar::dbl() const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return Nullable::dbl();
@@ -174,7 +174,7 @@ Oracle::Varchar::dbl() const throw(Oracle::Value_Error)
 
 
 double
-Oracle::Varchar::dbl(const double n) const throw(Oracle::Value_Error)
+Oracle::Varchar::dbl(const double n) const throw(Oracle::Error)
 {
 	if (ind == -1)
 		return n;
@@ -217,7 +217,12 @@ Oracle::Varchar::operator=(const std::string& s) throw()
 Oracle::Varchar&
 Oracle::Varchar::operator=(const Oracle::Varchar& rhs) throw()
 {
-	this->operator=((char*)rhs.data());
+	if (&rhs != this)
+	{
+		ind = rhs.ind;
+		if (ind == 0)
+			this->operator=(rhs.vc);
+	}
 	return *this;
 }
 
@@ -239,17 +244,6 @@ Oracle::Varchar::operator=(const double rhs) throw()
 	ost << rhs;
 	this->operator=(ost.str());
 	return *this;
-}
-
-
-std::ostream&
-Oracle::operator<<(std::ostream& o, const Oracle::Varchar& v)
-{
-	if (v.is_null())
-		o << "<NULL>";
-	else
-		o << v.str();
-	return o;
 }
 
 

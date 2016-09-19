@@ -40,27 +40,45 @@ namespace Oracle
 	{
 		public:
 			// constructors/destructor
-			Rowtype(const Select_Stmt&)			throw(OCI_Error, Type_Error); // initialize with select list types
+			Rowtype()					throw(Error);	// create empty Rowtype object
+			Rowtype(const Select_Stmt&)			throw(Error);	// initialize with select list types
 			virtual ~Rowtype()				throw();
 
 			// implementors
+			void add(Nullable*, const std::string&)		throw();	
 			void set_null()					throw();
-			Nullable& operator[](const int)			throw(Value_Error);
-			Nullable& operator[](const std::string&)	throw(Value_Error);
+			inline Nullable& operator[](const int i)	throw(Error)
+				{ if (col_vec && i >= 0 && i < col_vec->size()) return *(*col_vec)[i];
+				else throw_subscript_error("Rowtype::operator[](const int)", i); }
+			Nullable& operator[](const std::string& s)	throw(Error)
+				{ if (col_name_m->count(s)) return *(*col_vec)[(*col_name_m)[s]];
+				else throw_subscript_error("Rowtype::operator[](const std::string&)", s); }
 
 			// accessors
 			int ncols() const				throw();
-			std::string colname(const int) const		throw(Value_Error);
-			const Nullable& operator[](const int) const	throw(Value_Error);
-			const Nullable& operator[](const std::string&) const	throw(Value_Error);
+			std::string colname(const int) const		throw(Error);
+			inline const Nullable& operator[](const int i) const throw(Error)
+				{ if (col_vec && i >= 0 && i < col_vec->size()) return *(*col_vec)[i];
+				else throw_subscript_error("Rowtype::operator[](const int)", i); }
+			const Nullable& operator[](const std::string& s) const throw(Error)
+				{ if (col_name_m->count(s)) return *(*col_vec)[(*col_name_m)[s]];
+				else throw_subscript_error("Rowtype::operator[](const std::string&)", s); }
 
 		protected:
+			// protected implementors
+			void init_data(const Select_Stmt&)		throw(Error);
+			void throw_subscript_error(const std::string&, const int) const throw(Error);
+			void throw_subscript_error(const std::string&, const std::string&) const throw(Error);
+
 			// data members
 			OCIStmt* stmt_h;
 			OCIError* err_h;
 			std::vector<Nullable*>* col_vec;
 			std::vector<std::string>* col_name;
 			std::map<std::string, int>* col_name_m;
+
+		friend class Stmt;
+		friend class Select_Stmt;
 	};
 
 	std::ostream& operator<<(std::ostream&, const Oracle::Rowtype&)	throw();

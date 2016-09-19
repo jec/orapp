@@ -22,6 +22,7 @@
 #include "Stmt.h"
 #include "Connection.h"
 #include "Nullable.h"
+#include "Rowtype.h"
 #include <oci.h>
 
 
@@ -31,7 +32,7 @@ Oracle::Stmt::Stmt(OCIStmt* stmt_hdl, char* stmt_ptr, OCISvcCtx* svc_hdl, OCIErr
 }
 
 
-Oracle::Stmt::Stmt(Connection& db) throw(Oracle::OCI_Error, Oracle::Error)
+Oracle::Stmt::Stmt(Connection& db) throw(Oracle::Error)
 	: svc_h(db.svc_handle()), err_h(db.err_handle()), st(Initialized), stmt_p(0)
 {
 	// connect to database if necessary and set handles again
@@ -53,7 +54,7 @@ Oracle::Stmt::Stmt(Connection& db) throw(Oracle::OCI_Error, Oracle::Error)
 }
 
 
-Oracle::Stmt::Stmt(Connection& db, const std::string& sql) throw(Oracle::OCI_Error, Oracle::Error)
+Oracle::Stmt::Stmt(Connection& db, const std::string& sql) throw(Oracle::Error)
 	: svc_h(db.svc_handle()), err_h(db.err_handle()), st(Initialized), stmt_p(new char[sql.length() + 1])
 {
 	// connect to database if necessary and set handles again
@@ -85,8 +86,22 @@ Oracle::Stmt::~Stmt() throw()
 
 
 void
-Oracle::Stmt::prepare(const std::string& sql) throw(Oracle::OCI_Error)
+Oracle::Stmt::prepare() throw(Oracle::Error)
 {
+	if (std::ostringstream::str().length())
+		prepare(std::ostringstream::str());
+	else
+		throw State_Error("Stmt::prepare()", "No statement text has been specified");
+}
+
+
+void
+Oracle::Stmt::prepare(const std::string& sql) throw(Oracle::Error)
+{
+	// validate state
+	if (st >= Prepared)
+		throw State_Error("Stmt::prepare(const std::string&)", "Too late to prepare statement");
+
 	// copy statement text into buffer
 	if (!stmt_p)
 		stmt_p = new char[sql.length() + 1];
@@ -101,7 +116,11 @@ Oracle::Stmt::prepare(const std::string& sql) throw(Oracle::OCI_Error)
 			(ub4) strlen(stmt_p),						// statement length
 			(ub4) OCI_NTV_SYNTAX,						// syntax type
 			(ub4) OCI_DEFAULT))						// mode
-		throw OCI_Error("Stmt::prepare", err_h);
+	{
+		OCI_Error e("Stmt::prepare(const std::string&)", err_h);
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
 	st = Prepared;
 
 	// if bind variables have been queued, bind them
@@ -120,7 +139,7 @@ Oracle::Stmt::prepare(const std::string& sql) throw(Oracle::OCI_Error)
 
 
 int
-Oracle::Stmt::get_type() const throw(Oracle::OCI_Error)
+Oracle::Stmt::get_type() const throw(Oracle::Error)
 {
 	// get the statement type
 	ub2 stmt_type;
@@ -130,7 +149,11 @@ Oracle::Stmt::get_type() const throw(Oracle::OCI_Error)
 			(ub4 *) 0,							// output size (0==default)
 			(ub4) OCI_ATTR_STMT_TYPE,					// attribute to return
 			err_h))								// error handle
-		throw OCI_Error("Stmt::get_type()", err_h);
+	{
+		OCI_Error e("Stmt::get_type()", err_h);
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
 	return (int)stmt_type;
 }
 
@@ -146,7 +169,7 @@ Oracle::Stmt::str() const throw()
 
 
 void
-Oracle::Stmt::bind(Nullable& bindvar) throw(Oracle::State_Error, Oracle::OCI_Error)
+Oracle::Stmt::bind(Nullable& bindvar) throw(Oracle::Error)
 {
 	// check state
 	if (st == Initialized)
@@ -157,7 +180,11 @@ Oracle::Stmt::bind(Nullable& bindvar) throw(Oracle::State_Error, Oracle::OCI_Err
 			throw State_Error("Stmt::bind(Nullable&)", "No statement text has been specified");
 	}
 	else if (st > Prepared)
-		throw State_Error("Stmt::bind", "Cannot bind after execution");
+	{
+		State_Error e("Stmt::bind", "Cannot bind after execution");
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
 
 	// do the bind
 	OCIBind* bind_h = 0;
@@ -174,7 +201,11 @@ Oracle::Stmt::bind(Nullable& bindvar) throw(Oracle::State_Error, Oracle::OCI_Err
 			(ub4) 0,
 			(ub4*) 0,
 			OCI_DEFAULT))
-		throw OCI_Error("Stmt::bind(Nullable&)", err_h);
+	{
+		OCI_Error e("Stmt::bind(Nullable&)", err_h);
+		e.desc << "statement = {" << stmt_p << "}; position = " << bind_l.size() + 1;
+		throw e;
+	}
 
 	// add the bind handle to the list
 	bind_l.push_back(bind_h);
@@ -182,7 +213,7 @@ Oracle::Stmt::bind(Nullable& bindvar) throw(Oracle::State_Error, Oracle::OCI_Err
 
 
 void
-Oracle::Stmt::bind(Nullable& bindvar, const std::string& label) throw(Oracle::State_Error, Oracle::OCI_Error)
+Oracle::Stmt::bind(Nullable& bindvar, const std::string& label) throw(Oracle::Error)
 {
 	// check state
 	if (st == Initialized)
@@ -193,7 +224,11 @@ Oracle::Stmt::bind(Nullable& bindvar, const std::string& label) throw(Oracle::St
 			throw State_Error("Stmt::bind(Nullable&)", "No statement text has been specified");
 	}
 	else if (st > Prepared)
-		throw State_Error("Stmt::bind", "Cannot bind after execution");
+	{
+		State_Error e("Stmt::bind", "Cannot bind after execution");
+		e.desc << "statement = {" << stmt_p << "}; label = {" << label << "}";
+		throw e;
+	}
 
 	// do the bind
 	OCIBind* bind_h = 0;
@@ -211,16 +246,24 @@ Oracle::Stmt::bind(Nullable& bindvar, const std::string& label) throw(Oracle::St
 			(ub4) 0,
 			(ub4*) 0,
 			OCI_DEFAULT))
-		throw OCI_Error("Stmt::bind(Nullable&, const std::string&)", err_h);
+	{
+		OCI_Error e("Stmt::bind(Nullable&, const std::string&)", err_h);
+		e.desc << "statement = {" << stmt_p << "}; label = {" << label << "}";
+		throw e;
+	}
 }
 
 
 void
-Oracle::Stmt::bind_q(Nullable& bindvar) throw(Oracle::State_Error)
+Oracle::Stmt::bind_q(Nullable& bindvar) throw(Oracle::Error)
 {
 	// check state
 	if (st != Initialized)
-		throw State_Error("Stmt::bind_q(Nullable&)", "Cannot alter statement text in this state");
+	{
+		State_Error e("Stmt::bind_q(Nullable&)", "Cannot alter statement text in this state");
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
 
 	// add to the queue
 	bind_q_.push(&bindvar);
@@ -231,7 +274,37 @@ Oracle::Stmt::bind_q(Nullable& bindvar) throw(Oracle::State_Error)
 
 
 void
-Oracle::Stmt::do_exec(const int iters) throw(Oracle::State_Error, Oracle::OCI_Error)
+Oracle::Stmt::bind_q(Rowtype& row) throw(Oracle::Error)
+{
+	// check state
+	if (st != Initialized)
+	{
+		State_Error e("Stmt::bind_q(Rowtype&)", "Cannot alter statement text in this state");
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
+
+	// check Rowtype
+	if (!row.col_vec)
+	{
+		Value_Error e("Stmt::bind_q(Rowtype&)", "Rowtype object is not initialized");
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
+
+	// add each Nullable to bind queue and add placeholder to statement text
+	for (int i=0; i<row.col_vec->size(); i++)
+	{
+		bind_q_.push((*row.col_vec)[i]);
+		*this << ":bindq" << bind_q_.size();
+		if (i < row.col_vec->size() - 1)
+			*this << ", ";
+	}
+}
+
+
+void
+Oracle::Stmt::do_exec(const int iters) throw(Oracle::Error)
 {
 	// The parameter indicates the following:
 	// 	For SELECT statements, if iters is non-zero, then defines must have already been done,
@@ -246,10 +319,18 @@ Oracle::Stmt::do_exec(const int iters) throw(Oracle::State_Error, Oracle::OCI_Er
 		if (std::ostringstream::str().length())
 			prepare(std::ostringstream::str());
 		else
-			throw State_Error("Stmt::do_exec", "No statement text has been specified");
+		{
+			State_Error e("Stmt::do_exec", "No statement text has been specified");
+			e.desc << "statement = {" << stmt_p << "}";
+			throw e;
+		}
 	}
 	if (st == Closed)
-		throw State_Error("Stmt::do_exec", "Cannot execute a closed statement");
+	{
+		State_Error e("Stmt::do_exec", "Cannot execute a closed statement");
+		e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
 
 	// execute statement
 	switch(OCIStmtExecute(
@@ -270,8 +351,8 @@ Oracle::Stmt::do_exec(const int iters) throw(Oracle::State_Error, Oracle::OCI_Er
 			break;
 
 		default:
-			OCI_Error e("Stmt::do_exec", err_h, __FILE__, __LINE__);
-			e.desc << "statement={" << stmt_p << "}";
+			OCI_Error e("Stmt::do_exec", err_h);
+			e.desc << "statement = {" << stmt_p << "}";
 			throw e;
 	}
 }

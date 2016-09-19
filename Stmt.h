@@ -42,18 +42,28 @@ namespace Oracle
 	class Stmt;
 	const char stmt_idx[] = { 106, 101, 99, 97, 105, 110, 0 };
 
-	struct Stmt_Manip
+	struct Stmt_Null_Manip
 	{
 		// constructor/destructor
-		Stmt_Manip(std::ostream& (*f)(std::ostream&, Nullable&), Nullable& o) : func(f), obj(o) {}
-		~Stmt_Manip() {}
+		Stmt_Null_Manip(std::ostream& (*f)(std::ostream&, Nullable&), Nullable& o) : func(f), obj(o) {}
+		~Stmt_Null_Manip() {}
 		
 		// data members
 		std::ostream& (*func)(std::ostream&, Nullable&);	// ptr to function to invoke
 		Nullable& obj;						// object to pass to function
 	};
 
-	
+	struct Stmt_Row_Manip
+	{
+		// constructor/destructor
+		Stmt_Row_Manip(std::ostream& (*f)(std::ostream&, Rowtype&), Rowtype& o) : func(f), obj(o) {}
+		~Stmt_Row_Manip() {}
+		
+		// data members
+		std::ostream& (*func)(std::ostream&, Rowtype&);		// ptr to function to invoke
+		Rowtype& obj;						// object to pass to function
+	};
+
 	class Stmt: public std::ostringstream
 	{
 		public:
@@ -65,57 +75,67 @@ namespace Oracle
 			virtual ~Stmt()					throw();
 
 			// implementors
-			virtual void prepare(const std::string&)	throw(OCI_Error);	// prepare statement
-			virtual void bind(Nullable&)			throw(State_Error, OCI_Error); // bind by pos
-			virtual void bind(Nullable&, const std::string&) throw(State_Error, OCI_Error); // bind by name
-			virtual void bind_q(Nullable&)			throw(State_Error);	// add placeholder
-			virtual void exec() = 0;						// execute
-			virtual void close()				throw();		// release resources
+			virtual void prepare()				throw(Error);	// prepare stream text
+			virtual void prepare(const std::string&)	throw(Error);	// prepare specified text
+			virtual void bind(Nullable&)			throw(Error);	// bind by pos
+			virtual void bind(Nullable&, const std::string&) throw(Error);	// bind by name
+			virtual void bind_q(Nullable&)			throw(Error);	// add placeholder
+			virtual void bind_q(Rowtype&)			throw(Error);	// add placeholder
+			virtual void exec() 				throw(Error)= 0; // execute
+			virtual void close()				throw();	// release resources
 
 			// accessors
-			std::string str() const				throw();		// statement text
-			state_t state() const				throw()			// state
+			std::string str() const				throw();	// statement text
+			state_t state() const				throw()		// state
 				{ return st; }
-			virtual stmt_t type() const = 0;		// statement type
+			virtual stmt_t type() const			throw() = 0;	// statement type
 
 		protected:
 			// protected constructors
-			Stmt(Connection&)				throw(OCI_Error, Error); // can't use for a Stmt object directly
-			Stmt(Connection&, const std::string&)		throw(OCI_Error, Error); // can't use for a Stmt object directly
-			Stmt(	OCIStmt* stmt_hdl,						// statement handle
-				char* stmt_ptr,							// statement text
-				OCISvcCtx* svc_hdl,						// service context handle
-				OCIError* err_hdl)			throw();		// error handle
+			Stmt(Connection&)				throw(Error);	// can't use for a Stmt object directly
+			Stmt(Connection&, const std::string&)		throw(Error);	// can't use for a Stmt object directly
+			Stmt(	OCIStmt* stmt_hdl,					// statement handle
+				char* stmt_ptr,						// statement text
+				OCISvcCtx* svc_hdl,					// service context handle
+				OCIError* err_hdl)			throw();	// error handle
 
 			// protected accessors
-			OCIStmt* stmt_handle() const			throw()			// get statement handle
+			OCIStmt* stmt_handle() const			throw()		// get statement handle
 				{ return stmt_h; }
-			OCIError* err_handle() const			throw()			// get error handle
+			OCIError* err_handle() const			throw()		// get error handle
 				{ return err_h; }
 
 			// internal functions
-			int get_type() const				throw(OCI_Error);	// ask the OCI for the statement type
-			void do_exec(const int iter)			throw(State_Error, OCI_Error); // execute statement
+			int get_type() const				throw(Error);	// ask the OCI for the statement type
+			void do_exec(const int iter)			throw(Error);	// execute statement
 
 			// data members
-			state_t st;								// state
-			char *stmt_p;								// ptr to statement text
-			OCIStmt* stmt_h;							// statment handle
-			OCISvcCtx* svc_h;							// service handle
-			OCIError* err_h;							// error handle
-			std::list<OCIBind*> bind_l;						// list of bind variables
-			std::queue<Nullable*> bind_q_;						// queue of objects to bind
+			state_t st;							// state
+			char *stmt_p;							// ptr to statement text
+			OCIStmt* stmt_h;						// statment handle
+			OCISvcCtx* svc_h;						// service handle
+			OCIError* err_h;						// error handle
+			std::list<OCIBind*> bind_l;					// list of bind variables
+			std::queue<Nullable*> bind_q_;					// queue of objects to bind
 
-		friend Rowtype;
-		friend std::ostream& operator<<(std::ostream& s, const Stmt_Manip& m)
+		friend class Rowtype;
+		friend std::ostream& operator<<(std::ostream& s, const Stmt_Null_Manip& m)
+			{ return m.func(s, m.obj); }
+		friend std::ostream& operator<<(std::ostream& s, const Stmt_Row_Manip& m)
 			{ return m.func(s, m.obj); }
 	};
 	
-	inline std::ostream& bind_manip(std::ostream& s, Nullable& n)
+	inline std::ostream& bind_null_manip(std::ostream& s, Nullable& n)
 		{ dynamic_cast<Stmt&>(s).bind_q(n); return s; }
 	
-	inline Stmt_Manip bind(Nullable& n)
-		{ return Stmt_Manip(bind_manip, n); }
+	inline Stmt_Null_Manip bind(Nullable& n)
+		{ return Stmt_Null_Manip(bind_null_manip, n); }
+	
+	inline std::ostream& bind_row_manip(std::ostream& s, Rowtype& r)
+		{ dynamic_cast<Stmt&>(s).bind_q(r); return s; }
+	
+	inline Stmt_Row_Manip bind(Rowtype& r)
+		{ return Stmt_Row_Manip(bind_row_manip, r); }
 }
 
 #endif

@@ -30,13 +30,13 @@ Oracle::Non_Sel_Stmt::Non_Sel_Stmt(OCIStmt* stmt_hdl, char* stmt_ptr, OCISvcCtx*
 }
 
 
-Oracle::Non_Sel_Stmt::Non_Sel_Stmt(Connection& db) throw(Oracle::OCI_Error, Oracle::Error)
+Oracle::Non_Sel_Stmt::Non_Sel_Stmt(Connection& db) throw(Oracle::Error)
 	: Stmt(db)
 {
 }
 
 
-Oracle::Non_Sel_Stmt::Non_Sel_Stmt(Connection& db, const std::string& sql) throw(Oracle::OCI_Error, Oracle::Error)
+Oracle::Non_Sel_Stmt::Non_Sel_Stmt(Connection& db, const std::string& sql) throw(Oracle::Error)
 	: Stmt(db, sql)
 {
 	// make sure this is actually a non-SELECT statement
@@ -45,13 +45,15 @@ Oracle::Non_Sel_Stmt::Non_Sel_Stmt(Connection& db, const std::string& sql) throw
 		OCIHandleFree((dvoid *)stmt_h, (ub4)OCI_HTYPE_STMT);
 		delete stmt_p;
 		st = Invalid;
-		throw Type_Error("Non_Sel_Stmt::Non_Sel_Stmt", "Statement is not a non-SELECT statement [" + sql + "]");
+		Type_Error e("Non_Sel_Stmt::Non_Sel_Stmt", "Statement is not a non-SELECT statement");
+		e.desc << "statement = {" << sql << "}";
+		throw e;
 	}
 }
 
 
 void
-Oracle::Non_Sel_Stmt::exec() throw(Oracle::State_Error, Oracle::OCI_Error)
+Oracle::Non_Sel_Stmt::exec() throw(Oracle::Error)
 {
 	do_exec(1);
 }

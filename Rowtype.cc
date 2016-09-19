@@ -29,97 +29,15 @@
 #include <oci.h>
 
 
-Oracle::Rowtype::Rowtype(const Select_Stmt& stmt) throw(Oracle::OCI_Error, Oracle::Type_Error)
-	: stmt_h(stmt.stmt_handle()),
-	err_h(stmt.err_handle()),
-	col_vec(new std::vector<Nullable*>(stmt.ncols())),		// vector of ptrs to Nullables
-	col_name_m(new std::map<std::string, int>(*stmt.cnamem_)),	// map of column name -> position
-	col_name(new std::vector<std::string>(stmt.ncols()))		// vector of column names
+Oracle::Rowtype::Rowtype() throw(Oracle::Error)
+	: stmt_h(0), err_h(0), col_vec(0), col_name_m(0), col_name(0)
 {
-	// create map of column names and array of column values for fetch
-	for (std::map<std::string, int>::const_iterator i = col_name_m->begin(); i != col_name_m->end(); i++)
-		(*col_name)[i->second] = i->first;
+}
 
-	OCIParam* parm_h;
-	//OCIDefine* def_h;
-	short precision(0);
-	short scale(0);
-	ub2 col_type;
-	ub2 col_size;
 
-	for(int i=0; i < stmt.ncols(); i++)
-	{
-		// initialize handle pointers
-		parm_h = (OCIParam*) 0;
-		//def_h = (OCIDefine*) 0;
-
-		// get parameter
-		if(OCIParamGet(	stmt_h,
-				(ub4) OCI_HTYPE_STMT,
-				err_h,
-				(dvoid **) &parm_h,
-				(ub4) i + 1))							// position (one-based)
-			throw OCI_Error("Rowtype::Rowtype", err_h);
-
-		// get column type
-		if(OCIAttrGet(	(dvoid*) parm_h,
-				(ub4) OCI_DTYPE_PARAM, 
-				(dvoid*) &col_type,
-				(ub4 *) 0,
-				(ub4) OCI_ATTR_DATA_TYPE, 
-				err_h))
-			throw OCI_Error("Rowtype::Rowtype", err_h);
-
-		// get column scale and precision for numbers; else get size
-		if (col_type == 2)
-		{
-			if(OCIAttrGet(	(dvoid*) parm_h,
-					(ub4) OCI_DTYPE_PARAM, 
-					(dvoid*) &precision,
-					(ub4 *) 0,
-					(ub4) OCI_ATTR_PRECISION, 
-					err_h))
-				throw OCI_Error("Rowtype::Rowtype", err_h);
-			if(OCIAttrGet(	(dvoid*) parm_h,
-					(ub4) OCI_DTYPE_PARAM, 
-					(dvoid*) &scale,
-					(ub4 *) 0,
-					(ub4) OCI_ATTR_SCALE, 
-					err_h))
-				throw OCI_Error("Rowtype::Rowtype", err_h);
-		}
-		else
-			if(OCIAttrGet(	(dvoid*) parm_h,
-					(ub4) OCI_DTYPE_PARAM, 
-					(dvoid*) &col_size,
-					(ub4 *) 0,
-					(ub4) OCI_ATTR_DATA_SIZE, 
-					err_h))
-				throw OCI_Error("Rowtype::Rowtype", err_h);
-
-		// create an appropriate Nullable object
-		switch(col_type)
-		{
-			case 1:		// VARCHAR2
-			case 11:	// ROWID
-			case 96:	// CHAR
-				(*col_vec)[i] = new Varchar(col_size);
-				break;
-
-			case 2:		// NUMBER
-				(*col_vec)[i] = new Number;
-				break;
-
-			case 12:	// DATE
-				// dates are length 9 when fetched into a string (dd-mmm-yy)
-				//(*col_vec)[i] = new Varchar(9);
-				(*col_vec)[i] = new Date;
-				break;
-
-			default:
-				throw Type_Error("Rowtype::Rowtype", "Unsupported Oracle internal data type");
-		}
-	}
+Oracle::Rowtype::Rowtype(const Select_Stmt& stmt) throw(Oracle::Error)
+{
+	init_data(stmt);
 }
 
 
@@ -143,6 +61,99 @@ Oracle::Rowtype::~Rowtype() throw()
 
 
 void
+Oracle::Rowtype::init_data(const Select_Stmt& stmt) throw(Oracle::Error)
+{
+	// initialize data members
+	stmt_h = stmt.stmt_handle();
+	err_h = stmt.err_handle();
+	col_vec = new std::vector<Nullable*>(stmt.ncols());		// vector of ptrs to Nullables
+	col_name = new std::vector<std::string>(stmt.ncols());		// vector of column names
+	col_name_m = new std::map<std::string, int>(*stmt.cnamem_);	// map of column name -> position
+
+	// create map of column names and array of column values for fetch
+	for (std::map<std::string, int>::const_iterator i = col_name_m->begin(); i != col_name_m->end(); i++)
+		(*col_name)[i->second] = i->first;
+
+	OCIParam* parm_h;
+	short precision(0);
+	short scale(0);
+	ub2 col_type;
+	ub2 col_size;
+
+	for(int i=0; i < stmt.ncols(); i++)
+	{
+		// initialize handle pointers
+		parm_h = (OCIParam*) 0;
+
+		// get parameter
+		if(OCIParamGet(	stmt_h,
+				(ub4) OCI_HTYPE_STMT,
+				err_h,
+				(dvoid **) &parm_h,
+				(ub4) i + 1))							// position (one-based)
+			throw OCI_Error("Rowtype::init_data", err_h);
+
+		// get column type
+		if(OCIAttrGet(	(dvoid*) parm_h,
+				(ub4) OCI_DTYPE_PARAM, 
+				(dvoid*) &col_type,
+				(ub4 *) 0,
+				(ub4) OCI_ATTR_DATA_TYPE, 
+				err_h))
+			throw OCI_Error("Rowtype::init_data", err_h);
+
+		// get column scale and precision for numbers; else get size
+		if (col_type == 2)
+		{
+			if(OCIAttrGet(	(dvoid*) parm_h,
+					(ub4) OCI_DTYPE_PARAM, 
+					(dvoid*) &precision,
+					(ub4 *) 0,
+					(ub4) OCI_ATTR_PRECISION, 
+					err_h))
+				throw OCI_Error("Rowtype::init_data", err_h);
+			if(OCIAttrGet(	(dvoid*) parm_h,
+					(ub4) OCI_DTYPE_PARAM, 
+					(dvoid*) &scale,
+					(ub4 *) 0,
+					(ub4) OCI_ATTR_SCALE, 
+					err_h))
+				throw OCI_Error("Rowtype::init_data", err_h);
+		}
+		else
+			if(OCIAttrGet(	(dvoid*) parm_h,
+					(ub4) OCI_DTYPE_PARAM, 
+					(dvoid*) &col_size,
+					(ub4 *) 0,
+					(ub4) OCI_ATTR_DATA_SIZE, 
+					err_h))
+				throw OCI_Error("Rowtype::init_data", err_h);
+
+		// create an appropriate Nullable object
+		switch(col_type)
+		{
+			case 1:		// VARCHAR2
+			case 11:	// ROWID
+			case 96:	// CHAR
+				(*col_vec)[i] = new Varchar(col_size);
+				break;
+
+			case 2:		// NUMBER
+				(*col_vec)[i] = new Number;
+				break;
+
+			case 12:	// DATE
+				(*col_vec)[i] = new Date;
+				break;
+
+			default:
+				throw Type_Error("Rowtype::init_data", "Unsupported Oracle internal data type");
+		}
+	}
+}
+
+
+void
 Oracle::Rowtype::set_null() throw()
 {
 	if (col_vec)
@@ -151,51 +162,41 @@ Oracle::Rowtype::set_null() throw()
 }
 
 
-Oracle::Nullable&
-Oracle::Rowtype::operator[](const int i) throw(Oracle::Value_Error)
+void
+Oracle::Rowtype::add(Oracle::Nullable* n, const std::string& s) throw()
 {
-	if (col_vec && i >= 0 && i < col_vec->size())
-		return *(*col_vec)[i];
+	if (col_vec)
+	{
+		col_vec->push_back(n);
+		col_name->push_back(s);
+	}
 	else
 	{
-		std::ostringstream s;
-		s << "Subscript out of range [" << i << "]";
-		throw Value_Error("Rowtype::operator[]", s.str());
+		col_vec = new std::vector<Nullable*>(1);
+		col_name = new std::vector<std::string>(1);
+		col_name_m = new std::map<std::string, int>;
+		(*col_vec)[0] = n;
+		(*col_name)[col_vec->size() - 1] = s;
 	}
+	(*col_name_m)[s] = col_vec->size() - 1;
 }
 
 
-Oracle::Nullable&
-Oracle::Rowtype::operator[](const std::string& s) throw(Oracle::Value_Error)
+void
+Oracle::Rowtype::throw_subscript_error(const std::string& module, const int i) const throw(Oracle::Error)
 {
-	if (col_name_m->count(s))
-		return *(*col_vec)[(*col_name_m)[s]];
-	else
-		throw Value_Error("Rowtype::operator[]", "Column does not exist [" + s + "]");
+	Value_Error e(module, "Column out of range");
+	e.desc << "subscript = " << i;
+	throw e;
 }
 
 
-const Oracle::Nullable&
-Oracle::Rowtype::operator[](const int i) const throw(Oracle::Value_Error)
+void
+Oracle::Rowtype::throw_subscript_error(const std::string& module, const std::string& s) const throw(Oracle::Error)
 {
-	if (col_vec && i >= 0 && i < col_vec->size())
-		return *(*col_vec)[i];
-	else
-	{
-		std::ostringstream s;
-		s << "Subscript out of range [" << i << "]";
-		throw Value_Error("Rowtype::operator[]", s.str());
-	}
-}
-
-
-const Oracle::Nullable&
-Oracle::Rowtype::operator[](const std::string& s) const throw(Oracle::Value_Error)
-{
-	if (col_name_m->count(s))
-		return *(*col_vec)[(*col_name_m)[s]];
-	else
-		throw Value_Error("Rowtype::operator[]", "Subscript out of range");
+	Value_Error e(module, "Column does not exist");
+	e.desc << "subscript = {" << s << "}";
+	throw e;
 }
 
 
@@ -210,7 +211,7 @@ Oracle::Rowtype::ncols() const throw()
 
 
 std::string
-Oracle::Rowtype::colname(const int i) const throw(Oracle::Value_Error)
+Oracle::Rowtype::colname(const int i) const throw(Oracle::Error)
 {
 	if (col_name && (i >= 0) && (i < col_name->size()))
 		return (*col_name)[i];

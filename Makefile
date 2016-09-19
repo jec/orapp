@@ -9,11 +9,11 @@ OBJS=Oracle.o \
 	Number.o \
 	Varchar.o \
 	Date.o \
+	Rowtype.o \
 	Stmt.o \
 	Select_Stmt.o \
 	Non_Sel_Stmt.o \
-	Connection.o \
-	Rowtype.o
+	Connection.o
 
 $(ORAPPLIB):	$(ORAPP)
 		cp -a $(ORAPP) $(ORAPPLIB)
@@ -35,13 +35,13 @@ Date.o:		Date.cc Date.h Nullable.h Oracle.h Env.h
 
 Rowtype.o:	Rowtype.cc Rowtype.h Oracle.h Nullable.h Varchar.h Number.h Stmt.h Select_Stmt.h Date.h
 
-Connection.o:	Connection.cc Connection.h Stmt.h Select_Stmt.h Non_Sel_Stmt.h Oracle.h Env.h
+Connection.o:	Connection.cc Connection.h Stmt.h Select_Stmt.h Non_Sel_Stmt.h Oracle.h Env.h Rowtype.h
 
-Stmt.o:		Stmt.cc Stmt.h Oracle.h Connection.h Nullable.h Rowtype.h
+Stmt.o:		Stmt.cc Stmt.h Oracle.h Connection.h Nullable.h
 
 Select_Stmt.o:	Select_Stmt.cc Select_Stmt.h Stmt.h Oracle.h Connection.h Nullable.h Varchar.h Rowtype.h
 
-Non_Sel_Stmt.o:	Non_Sel_Stmt.cc Non_Sel_Stmt.h Stmt.h Oracle.h Nullable.h Rowtype.h Connection.h
+Non_Sel_Stmt.o:	Non_Sel_Stmt.cc Non_Sel_Stmt.h Stmt.h Oracle.h Nullable.h Connection.h
 
 #
 # suffix rules

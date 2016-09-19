@@ -44,18 +44,18 @@ namespace Oracle
 
 			// constructors/destructor
 			Connection(
-				const std::string&,						// username
-				const std::string&,						// password
-				const std::string& = "")		throw();		// database
-			Connection(const std::string&)			throw();		// connect string
-			virtual ~Connection()				throw(OCI_Error);
+				const std::string&,					// username
+				const std::string&,					// password
+				const std::string& = "")		throw();	// database
+			Connection(const std::string&)			throw();	// connect string
+			virtual ~Connection()				throw(Error);
 
 			// implementors
-			virtual void open()				throw(OCI_Error);	// attach to server
-			virtual Stmt* prepare(const std::string&)	throw(Error, OCI_Error); // execute a SQL statement
-			virtual void rollback()				throw(OCI_Error);	// roll back transaction
-			virtual void commit()				throw(OCI_Error);	// commit transaction
-			virtual void close()				throw(OCI_Error);	// detach from server
+			virtual void open()				throw(Error);	// attach to server
+			virtual Stmt* prepare(const std::string&)	throw(Error);	// execute a SQL statement
+			virtual void rollback()				throw(Error);	// roll back transaction
+			virtual void commit()				throw(Error);	// commit transaction
+			virtual void close()				throw(Error);	// detach from server
 
 		protected:
 			// protected functions
@@ -67,28 +67,28 @@ namespace Oracle
 				{ return err_h; }
 
 			// internal functions
-			void init_handles()				throw(OCI_Error);
-			void attach_server()				throw(OCI_Error);
-			void log_on()					throw(OCI_Error);
-			void log_off()					throw(OCI_Error);
-			void detach_server()				throw(OCI_Error);
+			void init_handles()				throw(Error);
+			void attach_server()				throw(Error);
+			void log_on()					throw(Error);
+			void log_off()					throw(Error);
+			void detach_server()				throw(Error);
 			void free_handles()				throw();
 		
 			// data members
-			std::string uid;							// username
-			std::string pw;								// password
-			std::string sid;							// db name
-			status_t stat;								// connection status
-			OCIError* err_h;							// error handle
-			OCIEnv* env_h;								// environment handle
-			OCIServer* svr_h;							// server handle
-			OCISvcCtx* svc_h;							// service context handle
-			OCISession* ses_h;							// session handle
+			std::string uid;						// username
+			std::string pw;							// password
+			std::string sid;						// db name
+			status_t stat;							// connection status
+			OCIError* err_h;						// error handle
+			OCIEnv* env_h;							// environment handle
+			OCIServer* svr_h;						// server handle
+			OCISvcCtx* svc_h;						// service context handle
+			OCISession* ses_h;						// session handle
 
 		private:
-			static Env env_;							// initializes OCI environment
+			static Env env_;						// initializes OCI environment
 
-		friend Stmt;
+		friend class Stmt;
 	};
 }
 

@@ -35,7 +35,10 @@ Oracle::Env Oracle::Number::env;
 
 Oracle::Number::Number() throw()
 	: Nullable(), num(new OCINumber)
-{	
+{
+	OCINumberSetZero(
+			env.err(),						// error handle
+			num);							// OCINumber
 }
 
 
@@ -83,16 +86,20 @@ Oracle::Number::Number(const double n) throw (Oracle::Error)
 Oracle::Number::Number(const Oracle::Number& n) throw (Oracle::Error)
 	: Nullable(), num(new OCINumber)
 {
-	// if n is not null, initialize this Number with n's value
-	if (n.ind == 0)
+	// if n is not null, initialize this Number with n's value;
+	// else initialize OCINumber to zero
+	if ((ind = n.ind) == 0)
 	{
 		if (OCINumberAssign(
 				env.err(),					// error handle
 				n.num,						// from OCINumber
 				num))						// to OCINumber
 			throw OCI_Error("Number::Number(const Number&)", env.err());
-		ind = 0;
 	}
+	else
+		OCINumberSetZero(
+				env.err(),					// error handle
+				num);						// OCINumber
 }
 
 
@@ -302,15 +309,13 @@ Oracle::Number::operator=(const double rhs) throw(Oracle::Error)
 Oracle::Number&
 Oracle::Number::operator=(const Oracle::Number& rhs) throw(Oracle::Error)
 {
-	ind = rhs.ind;
-	if (ind == 0)
-	{
-		if (OCINumberAssign(
-				env.err(),					// error handle
-				rhs.num,					// from OCINumber
-				num))						// to OCINumber
-			throw OCI_Error("Number::operator=(const Number&)", env.err());
-	}
+	if (&rhs != this)
+		if ((ind = rhs.ind) == 0)
+			if (OCINumberAssign(
+					env.err(),				// error handle
+					rhs.num,				// from OCINumber
+					num))					// to OCINumber
+				throw OCI_Error("Number::operator=(const Number&)", env.err());
 	return *this;
 }
 
@@ -318,16 +323,13 @@ Oracle::Number::operator=(const Oracle::Number& rhs) throw(Oracle::Error)
 Oracle::Number&
 Oracle::Number::operator+=(const Oracle::Number& n) throw(Oracle::Error)
 {
-	ind = n.ind;
-	if (ind == 0)
-	{
+	if (ind == 0 && (ind = n.ind) == 0)
 		if (OCINumberAdd(
 				env.err(),					// error handle
 				num,						// first OCINumber
 				n.num,						// second OCINumber
 				num))						// sum
 			throw OCI_Error("Number::operator+=(const Number&)", env.err());
-	}
 	return *this;
 }
 
@@ -335,16 +337,13 @@ Oracle::Number::operator+=(const Oracle::Number& n) throw(Oracle::Error)
 Oracle::Number&
 Oracle::Number::operator-=(const Oracle::Number& n) throw(Oracle::Error)
 {
-	ind = n.ind;
-	if (ind == 0)
-	{
+	if (ind == 0 && (ind = n.ind) == 0)
 		if (OCINumberSub(
 				env.err(),					// error handle
 				num,						// first OCINumber
 				n.num,						// second OCINumber
 				num))						// first - second
 			throw OCI_Error("Number::operator-=(const Number&)", env.err());
-	}
 	return *this;
 }
 
@@ -352,16 +351,13 @@ Oracle::Number::operator-=(const Oracle::Number& n) throw(Oracle::Error)
 Oracle::Number&
 Oracle::Number::operator*=(const Oracle::Number& n) throw(Oracle::Error)
 {
-	ind = n.ind;
-	if (ind == 0)
-	{
+	if (ind == 0 && (ind = n.ind) == 0)
 		if (OCINumberMul(
 				env.err(),					// error handle
 				num,						// first OCINumber
 				n.num,						// second OCINumber
 				num))						// product
 			throw OCI_Error("Number::operator*=(const Number&)", env.err());
-	}
 	return *this;
 }
 
@@ -369,16 +365,13 @@ Oracle::Number::operator*=(const Oracle::Number& n) throw(Oracle::Error)
 Oracle::Number&
 Oracle::Number::operator/=(const Oracle::Number& n) throw(Oracle::Error)
 {
-	ind = n.ind;
-	if (ind == 0)
-	{
+	if (ind == 0 && (ind = n.ind) == 0)
 		if (OCINumberDiv(
 				env.err(),					// error handle
 				num,						// first OCINumber
 				n.num,						// second OCINumber
 				num))						// first / second
 			throw OCI_Error("Number::operator/=(const Number&)", env.err());
-	}
 	return *this;
 }
 
@@ -541,19 +534,8 @@ operator/(const Oracle::Number& n1, const Oracle::Number& n2)
 }
 
 
-std::ostream&
-Oracle::operator<<(std::ostream& o, const Number& n)
-{
-	if (n.is_null())
-		o << "<NULL>";
-	else
-		o << n.str();
-	return o;
-}
-
-
 const bool
-Oracle::operator==(const Number& n1, const Number& n2)
+Oracle::operator==(const Oracle::Number& n1, const Oracle::Number& n2)
 {
 	if (n1.is_null() || n2.is_null())
 		return false;

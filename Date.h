@@ -51,52 +51,57 @@ namespace Oracle
 		public:
 			// constructors/destructor
 			Date()						throw();
-			Date(const std::string&)			throw(OCI_Error);
-			Date(const std::string&, const std::string&)	throw(OCI_Error);
-			Date(const Date&)				throw(OCI_Error);
+			Date(const std::string&)			throw(Error);
+			Date(const std::string&, const std::string&)	throw(Error);
+			Date(const Date&)				throw(Error);
 			virtual ~Date()					throw();
+
+			// implementors
+			Date& assign(							// assign date with given format
+				const std::string&,
+				const std::string&)			throw(Error);
 			
 			// accessors
-			virtual std::string str() const			throw(OCI_Error);	// return a string
-			virtual std::string str(const std::string&) const throw(OCI_Error);	// return a string or given string
-			virtual std::string str(						// return a string of given format
+			virtual std::string str() const			throw(Error);	// return a string
+			virtual std::string str(const std::string&) const throw(Error);	// return a string or given string
+			virtual std::string str(					// return a string of given format
 				const std::string&,						
-				const std::string&) const		throw(OCI_Error);
-			virtual std::string sql_str() const		throw(Value_Error);	// return a string
-			virtual long lng() const			throw(OCI_Error, Value_Error);	// return a long
-			virtual long lng(const long) const		throw(OCI_Error);	// return a long or given long
-			virtual double dbl() const			throw(Value_Error, OCI_Error);	// return a double
-			virtual double dbl(const double) const		throw(OCI_Error);	// return a double or given double
-			virtual int type() const			throw();		// Oracle type
+				const std::string&) const		throw(Error);
+			virtual std::string sql_str() const		throw(Error);	// return a string
+			virtual long lng() const			throw(Error);	// return a long
+			virtual long lng(const long) const		throw(Error);	// return a long or given long
+			virtual double dbl() const			throw(Error);	// return a double
+			virtual double dbl(const double) const		throw(Error);	// return a double or given double
+			virtual int type() const			throw();	// Oracle type
 			virtual int maxsize() const			throw();
-			Date last_day() const				throw(OCI_Error);	// get last day of month
-			Date next_day(const std::string&) const		throw(OCI_Error);	// get date of next given day of week
+			Date last_day() const				throw(Error);	// get last day of month
+			Date next_day(const std::string&) const		throw(Error);	// get date of next given day of week
 
 			// operators
-			Date& operator=(const Date&)			throw(OCI_Error);
-			Date& operator=(const char*)			throw(OCI_Error);
-			Date& operator=(const std::string&)		throw(OCI_Error);
-			Date& operator+=(const Days&)			throw(OCI_Error);
-			Date& operator+=(const Months&)			throw(OCI_Error);
-			Date& operator-=(const Days&)			throw(OCI_Error);
-			Date& operator-=(const Months&)			throw(OCI_Error);
-			int operator-(const Date&)			throw(OCI_Error);
-			bool operator==(const Date&)			throw(OCI_Error);
-			bool operator!=(const Date&)			throw(OCI_Error);
-			bool operator<(const Date&)			throw(OCI_Error);
-			bool operator<=(const Date&)			throw(OCI_Error);
-			bool operator>(const Date&)			throw(OCI_Error);
-			bool operator>=(const Date&)			throw(OCI_Error);
+			Date& operator=(const Date&)			throw(Error);
+			Date& operator=(const char*)			throw(Error);
+			Date& operator=(const std::string&)		throw(Error);
+			Date& operator+=(const Days&)			throw(Error);
+			Date& operator+=(const Months&)			throw(Error);
+			Date& operator-=(const Days&)			throw(Error);
+			Date& operator-=(const Months&)			throw(Error);
+			int operator-(const Date&)			throw(Error);
+			bool operator==(const Date&)			throw(Error);
+			bool operator!=(const Date&)			throw(Error);
+			bool operator<(const Date&)			throw(Error);
+			bool operator<=(const Date&)			throw(Error);
+			bool operator>(const Date&)			throw(Error);
+			bool operator>=(const Date&)			throw(Error);
 			
 			// static functions
-			static Date sysdate()				throw(OCI_Error);	// date/time on client
+			static Date sysdate()				throw(Error);	// date/time on client
 			
 		protected:
 			// constructor
-			Date(OCIDate&)					throw(OCI_Error);	// internal constructor
+			Date(OCIDate&)					throw(Error);	// internal constructor
 
 			// implementors
-			virtual void* data() const throw() { return (void*)date_; };		// ptr to data
+			virtual void* data() const throw() { return (void*)date_; };	// ptr to data
 			
 			// data members
 			OCIDate* date_;
@@ -104,7 +109,8 @@ namespace Oracle
 			static Env env;
 	};
 
-	std::ostream& operator<<(std::ostream&, const Date&);
+	inline std::ostream& operator<<(std::ostream& o, const Date& d)
+	{ return o << d.str("<NULL>"); }
 }
 	
 Oracle::Date operator+(const Oracle::Date&, const Oracle::Days&);

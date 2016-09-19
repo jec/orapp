@@ -23,6 +23,7 @@
 #define ORAPP_SELECT_STMT_H
 
 #include "Stmt.h"
+#include "Rowtype.h"
 #include <vector>
 #include <map>
 
@@ -32,51 +33,64 @@ class OCIDefine;
 namespace Oracle
 {
 	class Nullable;
-	class Rowtype;
 
 	class Select_Stmt: public Stmt
 	{
 		public:
 			// constructors/destructor
-			Select_Stmt(Connection&)			throw(OCI_Error, Error); // use this Connection
+			Select_Stmt(Connection&)			throw(Error);	// use this Connection
 			Select_Stmt(
-				Connection&,							// use this Connection
-				const std::string&)			throw(OCI_Error, Error); // statement text
+				Connection&,						// use this Connection
+				const std::string&)			throw(Error);	// statement text
 			virtual ~Select_Stmt()				throw();
 
 			// implementors
-			virtual void exec()				throw(State_Error, OCI_Error);
-			virtual void bind_col(Nullable&)		throw(State_Error, OCI_Error);
-			virtual void bind_col(Rowtype&)			throw(State_Error, OCI_Error);
-			virtual bool fetch()				throw(State_Error, OCI_Error); // get rows
+			virtual void exec()				throw(Error);
+			virtual void bind_col(Nullable&)		throw(Error);
+			virtual void bind_col(Nullable* ...)		throw(Error);
+			virtual void bind_col(Rowtype&)			throw(Error);
+			virtual bool fetch()				throw(Error);	// get rows
 			virtual void close()				throw();
+			inline Nullable& operator[](const int i)	throw(Error)	// get column data
+				{ if (row_) return (*row_)[i];
+				else throw_subscript_error("Select_Stmt::operator[](const int)"); }
+			inline Nullable& operator[](const std::string& s) throw(Error)	// get column data
+				{ if (row_) return (*row_)[s];
+				else throw_subscript_error("Select_Stmt::operator[](const std::string&)"); }
 
 			// accessors
-			virtual Nullable& operator[](const int) const	throw(State_Error);	// get column data
-			virtual Nullable& operator[](const std::string&) const throw(State_Error); // get column data
-			virtual std::string colname(const int) const	throw(State_Error, Value_Error); // get column name
-			virtual stmt_t type() const						// statement type
+			const inline Nullable& operator[](const int i) const throw(Error) // get column data
+				{ if (row_) return (*row_)[i];
+				else throw_subscript_error("Select_Stmt::operator[](const int)"); }
+			const inline Nullable& operator[](const std::string& s) const throw(Error) // get column data
+				{ if (row_) return (*row_)[s];
+				else throw_subscript_error("Select_Stmt::operator[](const std::string&)"); }
+			virtual std::string colname(const int) const	throw(Error);	// get column name
+			virtual stmt_t type() const					// statement type
 				{ return Select; }
-			virtual int ncols() const						// number of columns
+			virtual int ncols() const					// number of columns
 				{ return nc; }
 
 		protected:
 			// protected constructor
 			Select_Stmt(
-				OCIStmt* stmt_hdl,						// statement handle
-				char* stmt_ptr,							// statement text
-				OCISvcCtx* svc_hdl,						// service context handle
-				OCIError* err_hdl)			throw();		// error handle
+				OCIStmt* stmt_hdl,					// statement handle
+				char* stmt_ptr,						// statement text
+				OCISvcCtx* svc_hdl,					// service context handle
+				OCIError* err_hdl)			throw();	// error handle
+			
+			// protected implementors
+			void throw_subscript_error(const std::string&) const throw(Error);
 			
 			// data members
-			int nc;									// number of columns returned
+			int nc;								// number of columns returned
 			Rowtype* row_;
-			std::list<OCIDefine*> def_l;						// list of define handles
-			std::vector<std::string>* cnamev_;					// vector of column names
-			std::map<std::string, int>* cnamem_;					// map of col name to number
+			std::list<OCIDefine*> def_l;					// list of define handles
+			std::vector<std::string>* cnamev_;				// vector of column names
+			std::map<std::string, int>* cnamem_;				// map of col name to number
 
-		friend Connection;
-		friend Rowtype;
+		friend class Connection;
+		friend class Rowtype;
 	};
 }
 
