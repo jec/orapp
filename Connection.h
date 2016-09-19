@@ -86,6 +86,11 @@ namespace Oracle
 			OCISession* ses_h;						// session handle
 
 		private:
+			// disallowed functions
+			Connection();
+			Connection(const Connection&);
+
+			// data members
 			static Env env_;						// initializes OCI environment
 
 		friend class Stmt;

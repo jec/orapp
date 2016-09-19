@@ -1,3 +1,23 @@
+24-Mar-2001: Changes in 1.2.1 (since 1.2.0):
+
+	New Features and Enhancements:
+
+		In Oracle.h: Added method what() to Error classes (which
+		returns str()) to more accurately echo the std::exception
+		interface.
+
+		In Number.h/cc: Added several methods which access standard
+		OCI numeric functions: abs(), ceil(), floor(), mod(), round(),
+		pow(), sqrt(), trunc().
+
+	Bugs Fixed:
+
+		In Connection.h: Added private default and copy constructors
+		to disallow their use.
+
+		In Non_Sel_Stmt.h: Added a private default constructor to
+		disallow its use.
+
 16-Mar-2001: Changes in 1.2.0 (since 1.1.0):
 
 	New Features and Enhancements:

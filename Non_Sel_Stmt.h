@@ -49,7 +49,8 @@ namespace Oracle
 				{ return Non_Select; }
 		
 		protected:
-			// protected constructor
+			// protected constructors
+			Non_Sel_Stmt();
 			Non_Sel_Stmt(
 				OCIStmt* stmt_hdl,					// statement handle
 				char* stmt_ptr,						// statement text

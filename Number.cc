@@ -42,7 +42,7 @@ Oracle::Number::Number() throw()
 }
 
 
-Oracle::Number::Number(const int n) throw (Oracle::Error)
+Oracle::Number::Number(const int n) throw(Oracle::Error)
 	: Nullable(), num(new OCINumber)
 {
 	if (OCINumberFromInt(
@@ -56,7 +56,7 @@ Oracle::Number::Number(const int n) throw (Oracle::Error)
 }
 
 
-Oracle::Number::Number(const long n) throw (Oracle::Error)
+Oracle::Number::Number(const long n) throw(Oracle::Error)
 	: Nullable(), num(new OCINumber)
 {
 	if (OCINumberFromInt(
@@ -70,7 +70,7 @@ Oracle::Number::Number(const long n) throw (Oracle::Error)
 }
 
 
-Oracle::Number::Number(const double n) throw (Oracle::Error)
+Oracle::Number::Number(const double n) throw(Oracle::Error)
 	: Nullable(), num(new OCINumber)
 {
 	if (OCINumberFromReal(
@@ -83,7 +83,7 @@ Oracle::Number::Number(const double n) throw (Oracle::Error)
 }
 
 
-Oracle::Number::Number(const Oracle::Number& n) throw (Oracle::Error)
+Oracle::Number::Number(const Oracle::Number& n) throw(Oracle::Error)
 	: Nullable(), num(new OCINumber)
 {
 	// if n is not null, initialize this Number with n's value;
@@ -259,6 +259,164 @@ Oracle::Number::dbl(const double n) const throw(Oracle::Error)
 			(dvoid*) &d))						// result
 		throw OCI_Error("Number::dbl(const double)", env.err());
 	return d;
+}
+
+
+Oracle::Number
+Oracle::Number::abs() const throw(Oracle::Error)
+{
+	Number n;
+	if (ind == 0)
+	{
+		if (OCINumberAbs(
+				env.err(),					// error handle
+				num,						// input OCINumber
+				n.num))						// output OCINumber
+			throw OCI_Error("Number::abs()", env.err());
+		n.ind = 0;
+	}
+	return n;
+}
+
+
+Oracle::Number
+Oracle::Number::ceil() const throw(Oracle::Error)
+{
+	Number n;
+	if (ind == 0)
+	{
+		if (OCINumberCeil(
+				env.err(),					// error handle
+				num,						// input OCINumber
+				n.num))						// output OCINumber
+			throw OCI_Error("Number::ceil()", env.err());
+		n.ind = 0;
+	}
+	return n;
+}
+
+
+Oracle::Number
+Oracle::Number::floor() const throw(Oracle::Error)
+{
+	Number n;
+	if (ind == 0)
+	{
+		if (OCINumberFloor(
+				env.err(),					// error handle
+				num,						// input OCINumber
+				n.num))						// output OCINumber
+			throw OCI_Error("Number::floor()", env.err());
+		n.ind = 0;
+	}
+	return n;
+}
+
+
+Oracle::Number
+Oracle::Number::round(const int i) const throw(Oracle::Error)
+{
+	Number n;
+	if (ind == 0)
+	{
+		if (OCINumberRound(
+				env.err(),					// error handle
+				num,						// input OCINumber
+				(sword) i,					// #decimal places
+				n.num))						// output OCINumber
+			throw OCI_Error("Number::round(const int)", env.err());
+		n.ind = 0;
+	}
+	return n;
+}
+
+
+Oracle::Number
+Oracle::Number::mod(const Oracle::Number& m) const throw(Oracle::Error)
+{
+	Number n;
+	if (ind == 0 && m.ind == 0)
+	{
+		if (OCINumberMod(
+				env.err(),					// error handle
+				num,						// base OCINumber
+				m.num,						// exponent OCINumber
+				n.num))						// output OCINumber
+			throw OCI_Error("Number::mod(const Number&)", env.err());
+		n.ind = 0;
+	}
+	return n;
+}
+
+
+Oracle::Number
+Oracle::Number::pow(const Oracle::Number& p) const throw(Oracle::Error)
+{
+	Number n;
+	if (ind == 0 && p.ind == 0)
+	{
+		if (OCINumberPower(
+				env.err(),					// error handle
+				num,						// base OCINumber
+				p.num,						// exponent OCINumber
+				n.num))						// output OCINumber
+			throw OCI_Error("Number::power(const Number&)", env.err());
+		n.ind = 0;
+	}
+	return n;
+}
+
+
+Oracle::Number
+Oracle::Number::pow(const int p) const throw(Oracle::Error)
+{
+	Number n;
+	if (ind == 0)
+	{
+		if (OCINumberIntPower(
+				env.err(),					// error handle
+				num,						// base OCINumber
+				(CONST sword)p,					// exponent
+				n.num))						// output OCINumber
+			throw OCI_Error("Number::power(const int)", env.err());
+		n.ind = 0;
+	}
+	return n;
+}
+
+
+Oracle::Number
+Oracle::Number::sqrt() const throw(Oracle::Error)
+{
+	Number n;
+	if (ind == 0)
+	{
+		if (OCINumberSqrt(
+				env.err(),					// error handle
+				num,						// input OCINumber
+				n.num))						// output OCINumber
+			throw OCI_Error("Number::sqrt()", env.err());
+		n.ind = 0;
+	}
+	return n;
+}
+
+
+Oracle::Number
+Oracle::Number::trunc(const int i) const throw(Oracle::Error)
+{
+	Number n;
+	if (ind == 0)
+	{
+		if (OCINumberTrunc(
+				env.err(),					// error handle
+				num,						// input OCINumber
+				(sword) i,					// #decimal places
+				n.num))						// output OCINumber
+			throw OCI_Error("Number::trunc()", env.err());
+		n.ind = 0;
+	}
+	return n;
 }
 
 

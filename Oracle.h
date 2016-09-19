@@ -33,7 +33,7 @@ class OCIError;
 namespace Oracle
 {
 	// version
-	const char version[] = "1.2.0";
+	const char version[] = "1.2.1";
 	const char copyright[] = "Copyright (C) 2000-2001 James Edwin Cain <me@jimcain.net>";
 
 	// helper functions
@@ -51,6 +51,8 @@ namespace Oracle
 
 		// accessors
 		std::string str() const;			// get formatted error message
+		const char* what() const
+			{ return str().c_str(); }
 		
 		// data members
 		std::string module;

@@ -53,7 +53,15 @@ namespace Oracle
 			virtual double dbl(const double) const			throw(Error);	// return a double or given double if null
 			virtual int sqlt() const				throw();	// Oracle type
 			virtual int maxsize() const				throw();
-
+			Number abs() const					throw(Error);
+			Number ceil() const					throw(Error);
+			Number floor() const					throw(Error);
+			Number mod(const Number&) const				throw(Error);
+			Number pow(const Number&) const				throw(Error);
+			Number pow(const int) const				throw(Error);
+			Number round(const int = 0) const			throw(Error);
+			Number sqrt() const					throw(Error);
+			Number trunc(const int = 0) const			throw(Error);
 
 			// operators
 			Number& operator=(const int)				throw(Error);

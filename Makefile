@@ -20,7 +20,8 @@ $(ORAPPLIB):	$(ORAPP)
 		cp -a $(ORAPP) $(ORAPPLIB)
 
 $(ORAPP):	$(OBJS)
-		g++ -shared -o $(ORAPP) -L/opt/STLport/lib $(OBJS) -lstlport_gcc
+		g++ -shared -o $(ORAPP) $(OBJS)
+#		g++ -shared -o $(ORAPP) -L/opt/STLport/lib $(OBJS) -lstlport_gcc
 
 Oracle.o:	Oracle.cc Oracle.h
 
@@ -55,4 +56,5 @@ Non_Sel_Stmt.o:	Non_Sel_Stmt.cc Non_Sel_Stmt.h Stmt.h Oracle.h Nullable.h Connec
 .cc.o:
 	g++ -c $(LCFLAGS) $(INCLUDE) $<
 
-INCLUDE= -I$(ORACLE_HOME)/rdbms/demo -I$(ORACLE_HOME)/rdbms/public -I$(ORACLE_HOME)/plsql/public -I$(ORACLE_HOME)/network/public -I/opt/STLport/stlport
+INCLUDE= -I$(ORACLE_HOME)/rdbms/demo -I$(ORACLE_HOME)/rdbms/public -I$(ORACLE_HOME)/plsql/public -I$(ORACLE_HOME)/network/public
+#INCLUDE= -I$(ORACLE_HOME)/rdbms/demo -I$(ORACLE_HOME)/rdbms/public -I$(ORACLE_HOME)/plsql/public -I$(ORACLE_HOME)/network/public -I/opt/STLport/stlport
