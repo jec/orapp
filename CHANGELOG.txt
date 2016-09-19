@@ -1,4 +1,52 @@
-Changes in 1.1.0 (since 1.0.0):
+16-Mar-2001: Changes in 1.2.0 (since 1.1.0):
+
+	New Features and Enhancements:
+
+		Added a new Cursor class to support the use of ref cursors.
+		The Cursor class inherits from Nullable (so that you can
+		bind() them) and Select_Stmt (so you fetch() and so on).
+
+		In the Nullable class and derived classes (Date, Number):
+		Renamed the type() member function to sqlt() to differentiate
+		it from the Stmt::oci_type() function (since Cursor inherits
+		from both Nullable and Stmt).
+
+		In the Stmt class and derived classes (Non_Sel_Stmt,
+		Select_Stmt): Renamed the get_type() member function to
+		oci_type().
+
+		In the Stmt class and derived classes (Non_Sel_Stmt,
+		Select_Stmt): Added a protected default constructor to allow
+		creation of an uninitialized Stmt object (to support the
+		Cursor class).
+
+		In the Stmt class and derived classes (Non_Sel_Stmt,
+		Select_Stmt): Added a member function sql_fcode() to retrieve
+		the OCI SQL function code for the statement.
+
+		In Select_Stmt.h/cc: Created a new protected member function
+		get_column_info() so that column information can be retrieved
+		both by the (non-default) constructors and when initializing a
+		default-constructed object.
+
+		In Env.h: Added the Cursor class as a friend class.
+
+		In Nullable.h: Changed the following member functions to
+		virtual: set_null(), is_null(), indicator().
+
+		In Makefile: Added build support for the Cursor class.
+
+	Bugs Fixed:
+
+		In Rowtype.cc: Fixed a nasty memory leak where the vector
+		object containing the column names was not released upon
+		destruction of the Rowtype object.
+
+		In Stmt.cc: Fixed possible references to a null pointer in
+		oci_type() (formerly get_type()), do_exec() and bind() when
+		generating an error object.
+
+3-Jan-2001: Changes in 1.1.0 (since 1.0.0):
 
 	New Features and Enhancements:
 

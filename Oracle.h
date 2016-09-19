@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // Ora++ -- a C++ interface to Oracle based on the Oracle Call Interface
-// Copyright (C) 2000 James Edwin Cain <me@jimcain.net>
+// Copyright (C) 2000-1 James Edwin Cain <me@jimcain.net>
 // 
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by
@@ -33,7 +33,7 @@ class OCIError;
 namespace Oracle
 {
 	// version
-	const char version[] = "1.1.0";
+	const char version[] = "1.2.0";
 	const char copyright[] = "Copyright (C) 2000-2001 James Edwin Cain <me@jimcain.net>";
 
 	// helper functions

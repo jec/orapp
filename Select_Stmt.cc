@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // Ora++ -- a C++ interface to Oracle based on the Oracle Call Interface
-// Copyright (C) 2000 James Edwin Cain <me@jimcain.net>
+// Copyright (C) 2000-1 James Edwin Cain <me@jimcain.net>
 // 
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by
@@ -23,11 +23,12 @@
 #include "Connection.h"
 #include "Varchar.h"
 #include <cstdio>
+#include <cstdarg>
 #include <oci.h>
 
 
-Oracle::Select_Stmt::Select_Stmt(OCIStmt* stmt_hdl, char* stmt_ptr, OCISvcCtx* svc_hdl, OCIError* err_hdl) throw()
-	: Stmt(stmt_hdl, stmt_ptr, svc_hdl, err_hdl), nc(0), cnamem_(0), cnamev_(0), row_(0)
+Oracle::Select_Stmt::Select_Stmt() throw(Oracle::Error)
+	: Stmt(), nc(0), cnamem_(0), cnamev_(0), row_(0)
 {
 }
 
@@ -42,7 +43,7 @@ Oracle::Select_Stmt::Select_Stmt(Connection& db, const std::string& sql) throw(O
 	: Stmt(db, sql), nc(0), cnamem_(0), cnamev_(0), row_(0)
 {
 	// make sure this is actually a SELECT statement
-	if (get_type() != OCI_STMT_SELECT)
+	if (oci_type() != OCI_STMT_SELECT)
 	{
 		OCIHandleFree((dvoid *)stmt_h, (ub4)OCI_HTYPE_STMT);
 		delete stmt_p;
@@ -51,6 +52,12 @@ Oracle::Select_Stmt::Select_Stmt(Connection& db, const std::string& sql) throw(O
 		e.desc << "statement = {" << sql << "}";
 		throw e;
 	}
+}
+
+
+Oracle::Select_Stmt::Select_Stmt(OCIStmt* stmt_hdl, char* stmt_ptr, OCISvcCtx* svc_hdl, OCIError* err_hdl) throw()
+	: Stmt(stmt_hdl, stmt_ptr, svc_hdl, err_hdl), nc(0), cnamem_(0), cnamev_(0), row_(0)
+{
 }
 
 
@@ -68,6 +75,13 @@ Oracle::Select_Stmt::exec() throw(Oracle::Error)
 	// state will only be changed if it is not already Executed or higher
 	Stmt::do_exec(0);
 
+	get_column_info();
+}
+
+
+void
+Oracle::Select_Stmt::get_column_info() throw(Oracle::Error)
+{
 	// if column name setup has already been done, we're finished
 	if (cnamem_)
 		return;
@@ -158,7 +172,7 @@ Oracle::Select_Stmt::bind_col(Oracle::Nullable& bindobj) throw(Oracle::Error)
 			def_l.size() + 1,				// position (one-based)
 			(dvoid*) bindobj.data(),			// output buffer
 			(sb4) bindobj.maxsize(),			// output buffer size
-			(ub2) bindobj.type(),				// external data type
+			(ub2) bindobj.sqlt(),				// external data type
 			(dvoid*) bindobj.ind_addr(),			// indicator
 			(ub2*) 0,					// array of length values
 			(ub2*) 0,					// array of return codes
@@ -210,7 +224,7 @@ Oracle::Select_Stmt::bind_col(Oracle::Nullable* n ...) throw(Oracle::Error)
 				def_l.size() + 1,			// position (one-based)
 				(dvoid*) bindobj->data(),		// output buffer
 				(sb4) bindobj->maxsize(),		// output buffer size
-				(ub2) bindobj->type(),			// external data type
+				(ub2) bindobj->sqlt(),			// external data type
 				(dvoid*) bindobj->ind_addr(),		// indicator
 				(ub2*) 0,				// array of length values
 				(ub2*) 0,				// array of return codes
@@ -270,7 +284,7 @@ Oracle::Select_Stmt::bind_col(Oracle::Rowtype& row) throw(Oracle::Error)
 				i + 1,						// position (one-based)
 				(dvoid*) row[i].data(),				// output buffer
 				(sb4) row[i].maxsize(),				// output buffer size
-				(ub2) row[i].type(),				// external data type
+				(ub2) row[i].sqlt(),				// external data type
 				(dvoid*) row[i].ind_addr(),			// indicator
 				(ub2*) 0,					// array of length values
 				(ub2*) 0,					// array of return codes

@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // Ora++ -- a C++ interface to Oracle based on the Oracle Call Interface
-// Copyright (C) 2000 James Edwin Cain <me@jimcain.net>
+// Copyright (C) 2000-1 James Edwin Cain <me@jimcain.net>
 // 
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by
@@ -40,6 +40,7 @@ namespace Oracle
 	class Nullable;
 	class Rowtype;
 	class Stmt;
+	class Cursor;
 	const char stmt_idx[] = { 106, 101, 99, 97, 105, 110, 0 };
 
 	struct Stmt_Null_Manip
@@ -85,13 +86,17 @@ namespace Oracle
 			virtual void close()				throw();	// release resources
 
 			// accessors
+			int nrows() const				throw(Error);	// returns #rows affected
 			std::string str() const				throw();	// statement text
 			state_t state() const				throw()		// state
 				{ return st; }
 			virtual stmt_t type() const			throw() = 0;	// statement type
+			int oci_type() const				throw(Error);	// get OCI stmt type
+			int sql_fcode() const				throw(Error);	// get SQL fcn code
 
 		protected:
 			// protected constructors
+			Stmt()						throw(Error);
 			Stmt(Connection&)				throw(Error);	// can't use for a Stmt object directly
 			Stmt(Connection&, const std::string&)		throw(Error);	// can't use for a Stmt object directly
 			Stmt(	OCIStmt* stmt_hdl,					// statement handle
@@ -106,7 +111,6 @@ namespace Oracle
 				{ return err_h; }
 
 			// internal functions
-			int get_type() const				throw(Error);	// ask the OCI for the statement type
 			void do_exec(const int iter)			throw(Error);	// execute statement
 
 			// data members

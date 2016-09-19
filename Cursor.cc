@@ -19,76 +19,42 @@
 //
 //////////////////////////////////////////////////////////////////////////////
 
-#include "Oracle.h"
-#include "Nullable.h"
+#include "Cursor.h"
 #include <oci.h>
 
+Oracle::Env Oracle::Cursor::env;
 
-Oracle::Nullable::Nullable() throw()
-	: ind(-1)
+Oracle::Cursor::Cursor() throw(Oracle::Error)
+	: Select_Stmt()
+{
+	// allocate statement handle
+	if(OCIHandleAlloc(
+			(dvoid *) env.env(),						// env handle
+			(dvoid **) &stmt_h,						// stmt handle returned
+			OCI_HTYPE_STMT,							// handle type to return
+			(size_t) 0,							// user-def memory size
+			(dvoid **) 0))							// user-def memory ptr
+		throw Error("Cursor::Cursor()", "OCIHandleAlloc failed for statement");
+	err_h = env.err();
+	st = Prepared;
+}
+
+Oracle::Cursor::~Cursor() throw()
 {
 }
 
 
-std::string
-Oracle::Nullable::str() const throw(Oracle::Error)
+void
+Oracle::Cursor::exec() throw(Oracle::Error)
 {
-	throw Value_Error("Nullable::str()", "Cannot make a string out of a NULL");
-}
-
-
-std::string
-Oracle::Nullable::str(const std::string& s) const throw()
-{
-	return s;
-}
-
-
-std::string
-Oracle::Nullable::str(const std::string& s, const std::string& f) const throw()
-{
-	// ignore format string
-	return s;
-}
-
-
-std::string
-Oracle::Nullable::sql_str() const throw()
-{
-	return "NULL";
-}
-
-
-long
-Oracle::Nullable::lng() const throw(Oracle::Error)
-{
-	throw Value_Error("Nullable::lng()", "Cannot make a long out of a NULL");
-}
-
-
-long
-Oracle::Nullable::lng(const long n) const throw()
-{
-	return n;
-}
-
-
-double
-Oracle::Nullable::dbl() const throw(Oracle::Error)
-{
-	throw Value_Error("Nullable::dbl()", "Cannot make a double out of a NULL");
-}
-
-
-double
-Oracle::Nullable::dbl(const double d) const throw()
-{
-	return d;
+	if (st < Executed)
+		st = Executed;
+	get_column_info();
 }
 
 
 int
-Oracle::Nullable::sqlt() const throw(Oracle::Error)
+Oracle::Cursor::sqlt() const throw(Oracle::Error)
 {
-	throw Value_Error("Nullable::type", "A NULL has no type");
+	return SQLT_RSET;
 }

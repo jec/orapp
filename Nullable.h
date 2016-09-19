@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // Ora++ -- a C++ interface to Oracle based on the Oracle Call Interface
-// Copyright (C) 2000 James Edwin Cain <me@jimcain.net>
+// Copyright (C) 2000-1 James Edwin Cain <me@jimcain.net>
 // 
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by
@@ -42,13 +42,13 @@ namespace Oracle
 				{}
 
 			// implementors
-			void set_null()					throw()
+			virtual void set_null()				throw()
 				{ ind = -1; }
 
 			// accessors
-			bool is_null() const				throw()
+			virtual bool is_null() const			throw()
 				{ return ind == -1; }
-			sb2 indicator() const				throw()		// return indicator variable
+			virtual sb2 indicator() const			throw()		// return indicator variable
 				{ return ind; }
 			virtual std::string str() const			throw(Error);	// return a string
 			virtual std::string str(const std::string&) const throw();	// return a string
@@ -60,7 +60,7 @@ namespace Oracle
 			virtual long lng(const long) const		throw();	// return a long
 			virtual double dbl() const			throw(Error);	// return a double
 			virtual double dbl(const double) const		throw();	// return a double
-			virtual int type() const			throw(Error);	// Oracle type
+			virtual int sqlt() const			throw(Error);	// Oracle type
 			virtual int maxsize() const			throw()		// max size of data
 				{ return 0; }
 			

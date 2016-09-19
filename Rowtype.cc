@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // Ora++ -- a C++ interface to Oracle based on the Oracle Call Interface
-// Copyright (C) 2000 James Edwin Cain <me@jimcain.net>
+// Copyright (C) 2000-1 James Edwin Cain <me@jimcain.net>
 // 
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by
@@ -51,7 +51,14 @@ Oracle::Rowtype::~Rowtype() throw()
 		delete col_vec;
 	}
 
-	// release the column name map
+	// release the column name vector
+	if (col_name)
+	{
+		col_name->clear();
+		delete col_name;
+	}
+
+	// release the column name -> position map
 	if (col_name_m)
 	{
 		col_name_m->clear();

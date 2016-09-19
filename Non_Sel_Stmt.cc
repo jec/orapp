@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // Ora++ -- a C++ interface to Oracle based on the Oracle Call Interface
-// Copyright (C) 2000 James Edwin Cain <me@jimcain.net>
+// Copyright (C) 2000-1 James Edwin Cain <me@jimcain.net>
 // 
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by
@@ -40,7 +40,7 @@ Oracle::Non_Sel_Stmt::Non_Sel_Stmt(Connection& db, const std::string& sql) throw
 	: Stmt(db, sql)
 {
 	// make sure this is actually a non-SELECT statement
-	if (get_type() == OCI_STMT_SELECT)
+	if (oci_type() == OCI_STMT_SELECT)
 	{
 		OCIHandleFree((dvoid *)stmt_h, (ub4)OCI_HTYPE_STMT);
 		delete stmt_p;

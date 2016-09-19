@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // Ora++ -- a C++ interface to Oracle based on the Oracle Call Interface
-// Copyright (C) 2000 James Edwin Cain <me@jimcain.net>
+// Copyright (C) 2000-1 James Edwin Cain <me@jimcain.net>
 // 
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by
@@ -85,7 +85,7 @@ Oracle::Varchar::~Varchar() throw()
 
 inline
 int
-Oracle::Varchar::type() const throw()
+Oracle::Varchar::sqlt() const throw()
 {
 	return SQLT_STR;
 }

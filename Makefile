@@ -12,6 +12,7 @@ OBJS=Oracle.o \
 	Rowtype.o \
 	Stmt.o \
 	Select_Stmt.o \
+	Cursor.o \
 	Non_Sel_Stmt.o \
 	Connection.o
 
@@ -40,6 +41,8 @@ Connection.o:	Connection.cc Connection.h Stmt.h Select_Stmt.h Non_Sel_Stmt.h Ora
 Stmt.o:		Stmt.cc Stmt.h Oracle.h Connection.h Nullable.h
 
 Select_Stmt.o:	Select_Stmt.cc Select_Stmt.h Stmt.h Oracle.h Connection.h Nullable.h Varchar.h Rowtype.h
+
+Cursor.o:	Cursor.cc Cursor.h Select_Stmt.h Stmt.h Oracle.h Connection.h Nullable.h Varchar.h Rowtype.h
 
 Non_Sel_Stmt.o:	Non_Sel_Stmt.cc Non_Sel_Stmt.h Stmt.h Oracle.h Nullable.h Connection.h
 

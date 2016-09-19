@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // Ora++ -- a C++ interface to Oracle based on the Oracle Call Interface
-// Copyright (C) 2000 James Edwin Cain <me@jimcain.net>
+// Copyright (C) 2000-1 James Edwin Cain <me@jimcain.net>
 // 
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by
@@ -26,8 +26,8 @@
 #include <oci.h>
 
 
-Oracle::Stmt::Stmt(OCIStmt* stmt_hdl, char* stmt_ptr, OCISvcCtx* svc_hdl, OCIError* err_hdl) throw()
-	: stmt_h(stmt_hdl), stmt_p(stmt_ptr), svc_h(svc_hdl), err_h(err_hdl), st(Prepared)
+Oracle::Stmt::Stmt() throw(Oracle::Error)
+	: svc_h(0), err_h(0), st(Initialized), stmt_p(0)
 {
 }
 
@@ -43,14 +43,14 @@ Oracle::Stmt::Stmt(Connection& db) throw(Oracle::Error)
 		err_h = db.err_handle();
 	}
 
-	// allocate a statement handle
+	// allocate statement handle
 	if(OCIHandleAlloc(
 			(dvoid *) db.env_handle(),					// env handle
 			(dvoid **) &stmt_h,						// stmt handle returned
 			OCI_HTYPE_STMT,							// handle type to return
 			(size_t) 0,							// user-def memory size
 			(dvoid **) 0))							// user-def memory ptr
-		throw Error("Stmt::Stmt(Connection&)", "OCIHandleAlloc failed for statement");
+		throw Error("Stmt::alloc_stmt_hdl()", "OCIHandleAlloc failed for statement");
 }
 
 
@@ -75,6 +75,12 @@ Oracle::Stmt::Stmt(Connection& db, const std::string& sql) throw(Oracle::Error)
 		throw Error("Stmt::Stmt(Connection&, const std::string&)", "OCIHandleAlloc failed for statement");
 
 	prepare(sql);
+}
+
+
+Oracle::Stmt::Stmt(OCIStmt* stmt_hdl, char* stmt_ptr, OCISvcCtx* svc_hdl, OCIError* err_hdl) throw()
+	: stmt_h(stmt_hdl), stmt_p(stmt_ptr), svc_h(svc_hdl), err_h(err_hdl), st(Prepared)
+{
 }
 
 
@@ -139,7 +145,7 @@ Oracle::Stmt::prepare(const std::string& sql) throw(Oracle::Error)
 
 
 int
-Oracle::Stmt::get_type() const throw(Oracle::Error)
+Oracle::Stmt::oci_type() const throw(Oracle::Error)
 {
 	// get the statement type
 	ub2 stmt_type;
@@ -150,11 +156,52 @@ Oracle::Stmt::get_type() const throw(Oracle::Error)
 			(ub4) OCI_ATTR_STMT_TYPE,					// attribute to return
 			err_h))								// error handle
 	{
-		OCI_Error e("Stmt::get_type()", err_h);
-		e.desc << "statement = {" << stmt_p << "}";
+		OCI_Error e("Stmt::oci_type()", err_h);
+		if (stmt_p)
+			e.desc << "statement = {" << stmt_p << "}";
 		throw e;
 	}
 	return (int)stmt_type;
+}
+
+
+int
+Oracle::Stmt::sql_fcode() const throw(Oracle::Error)
+{
+	ub2 fcode;
+	if(OCIAttrGet(	(dvoid *) stmt_h,						// statement handle
+			(ub4) OCI_HTYPE_STMT,						// handle type
+			(dvoid *) &fcode,						// returned value
+			(ub4 *) 0,							// output size (0==default)
+			(ub4) OCI_ATTR_SQLFNCODE,					// attribute to return
+			err_h))								// error handle
+	{
+		OCI_Error e("Stmt::sql_fcode()", err_h);
+		if (stmt_p)
+			e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
+	return (int)fcode;
+}
+
+
+int
+Oracle::Stmt::nrows() const throw(Oracle::Error)
+{
+	ub4 rowcount;
+	if(OCIAttrGet(	(dvoid *) stmt_h,						// statement handle
+			(ub4) OCI_HTYPE_STMT,						// handle type
+			(dvoid *) &rowcount,						// returned value
+			(ub4 *) 0,							// output size (0==default)
+			(ub4) OCI_ATTR_ROW_COUNT,					// attribute to return
+			err_h))								// error handle
+	{
+		OCI_Error e("Stmt::nrows()", err_h);
+		if (stmt_p)
+			e.desc << "statement = {" << stmt_p << "}";
+		throw e;
+	}
+	return (int)rowcount;
 }
 
 
@@ -181,8 +228,9 @@ Oracle::Stmt::bind(Nullable& bindvar) throw(Oracle::Error)
 	}
 	else if (st > Prepared)
 	{
-		State_Error e("Stmt::bind", "Cannot bind after execution");
-		e.desc << "statement = {" << stmt_p << "}";
+		State_Error e("Stmt::bind(Nullable&)", "Cannot bind after execution");
+		if (stmt_p)
+			e.desc << "statement = {" << stmt_p << "}";
 		throw e;
 	}
 
@@ -194,7 +242,7 @@ Oracle::Stmt::bind(Nullable& bindvar) throw(Oracle::Error)
 			(ub4) bind_l.size() + 1,
 			(dvoid*) bindvar.data(),
 			(sb4) bindvar.maxsize(),
-			(ub2) bindvar.type(),
+			(ub2) bindvar.sqlt(),
 			(dvoid*) bindvar.ind_addr(),
 			(ub2*) 0,
 			(ub2*) 0,
@@ -203,7 +251,9 @@ Oracle::Stmt::bind(Nullable& bindvar) throw(Oracle::Error)
 			OCI_DEFAULT))
 	{
 		OCI_Error e("Stmt::bind(Nullable&)", err_h);
-		e.desc << "statement = {" << stmt_p << "}; position = " << bind_l.size() + 1;
+		e.desc << "position = " << bind_l.size() + 1;
+		if (stmt_p)
+			e.desc << "; statement = {" << stmt_p << "}";
 		throw e;
 	}
 
@@ -221,12 +271,14 @@ Oracle::Stmt::bind(Nullable& bindvar, const std::string& label) throw(Oracle::Er
 		if (std::ostringstream::str().length())
 			prepare(std::ostringstream::str());
 		else
-			throw State_Error("Stmt::bind(Nullable&)", "No statement text has been specified");
+			throw State_Error("Stmt::bind(Nullable&, const std::string&)", "No statement text has been specified");
 	}
 	else if (st > Prepared)
 	{
-		State_Error e("Stmt::bind", "Cannot bind after execution");
-		e.desc << "statement = {" << stmt_p << "}; label = {" << label << "}";
+		State_Error e("Stmt::bind(Nullable&, const std::string&)", "Cannot bind after execution");
+		e.desc << "position = " << bind_l.size() + 1;
+		if (stmt_p)
+			e.desc << "; statement = {" << stmt_p << "}";
 		throw e;
 	}
 
@@ -239,7 +291,7 @@ Oracle::Stmt::bind(Nullable& bindvar, const std::string& label) throw(Oracle::Er
 			(sb4) label.length(),
 			(dvoid*) bindvar.data(),
 			(sb4) bindvar.maxsize(),
-			(ub2) bindvar.type(),
+			(ub2) bindvar.sqlt(),
 			(dvoid*) bindvar.ind_addr(),
 			(ub2*) 0,
 			(ub2*) 0,
@@ -248,7 +300,9 @@ Oracle::Stmt::bind(Nullable& bindvar, const std::string& label) throw(Oracle::Er
 			OCI_DEFAULT))
 	{
 		OCI_Error e("Stmt::bind(Nullable&, const std::string&)", err_h);
-		e.desc << "statement = {" << stmt_p << "}; label = {" << label << "}";
+		e.desc << "position = " << bind_l.size() + 1;
+		if (stmt_p)
+			e.desc << "; statement = {" << stmt_p << "}";
 		throw e;
 	}
 }
@@ -319,11 +373,7 @@ Oracle::Stmt::do_exec(const int iters) throw(Oracle::Error)
 		if (std::ostringstream::str().length())
 			prepare(std::ostringstream::str());
 		else
-		{
-			State_Error e("Stmt::do_exec", "No statement text has been specified");
-			e.desc << "statement = {" << stmt_p << "}";
-			throw e;
-		}
+			throw State_Error("Stmt::do_exec", "No statement text has been specified");
 	}
 	if (st == Closed)
 	{
@@ -352,7 +402,8 @@ Oracle::Stmt::do_exec(const int iters) throw(Oracle::Error)
 
 		default:
 			OCI_Error e("Stmt::do_exec", err_h);
-			e.desc << "statement = {" << stmt_p << "}";
+			if (stmt_p)
+				e.desc << "statement = {" << stmt_p << "}";
 			throw e;
 	}
 }

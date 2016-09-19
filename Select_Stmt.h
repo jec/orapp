@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // Ora++ -- a C++ interface to Oracle based on the Oracle Call Interface
-// Copyright (C) 2000 James Edwin Cain <me@jimcain.net>
+// Copyright (C) 2000-1 James Edwin Cain <me@jimcain.net>
 // 
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by
@@ -72,7 +72,8 @@ namespace Oracle
 				{ return nc; }
 
 		protected:
-			// protected constructor
+			// protected constructors
+			Select_Stmt()					throw(Error);
 			Select_Stmt(
 				OCIStmt* stmt_hdl,					// statement handle
 				char* stmt_ptr,						// statement text
@@ -81,6 +82,7 @@ namespace Oracle
 			
 			// protected implementors
 			void throw_subscript_error(const std::string&) const throw(Error);
+			void get_column_info() throw(Error);
 			
 			// data members
 			int nc;								// number of columns returned
